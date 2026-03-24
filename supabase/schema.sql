@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS budgets (
     id SERIAL PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id),
     category VARCHAR(50) NOT NULL,
-    limit NUMERIC(12,2) NOT NULL
+    budget_limit NUMERIC(12,2) NOT NULL
 );
 
 -- Goals table
