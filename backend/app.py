@@ -1085,4 +1085,19 @@ if __name__ == '__main__':
     print(f"🧹 Clear data: DELETE http://localhost:{port}/api/clear-data")
     print(f"📚️ Root endpoint: http://localhost:{port}/")
     print(f"🎯 Ready for frontend integration!")
+
+    # --- Database connection check ---
+    try:
+        from sqlalchemy import create_engine, text
+        db_url = os.environ.get('DATABASE_URL')
+        if db_url:
+            engine = create_engine(db_url)
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1;"))
+            print("✅ Database connection successful!")
+        else:
+            print("⚠️  DATABASE_URL not set. Skipping DB connection check.")
+    except Exception as e:
+        print(f"❌ Database connection failed: {e}")
+
     app.run(host='0.0.0.0', port=port, debug=True)

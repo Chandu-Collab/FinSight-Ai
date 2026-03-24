@@ -677,4 +677,19 @@ if __name__ == '__main__':
     print(f"📊 Health check: http://localhost:{port}/api/health")
     print(f"📈 Data status: http://localhost:{port}/api/data-status")
     print(f"🧹 Clear data: DELETE http://localhost:{port}/api/clear-data")
+
+    # --- Database connection check ---
+    try:
+        from sqlalchemy import create_engine, text
+        db_url = os.environ.get('DATABASE_URL')
+        if db_url:
+            engine = create_engine(db_url)
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1;"))
+            print("✅ Database connection successful!")
+        else:
+            print("⚠️  DATABASE_URL not set. Skipping DB connection check.")
+    except Exception as e:
+        print(f"❌ Database connection failed: {e}")
+
     app.run(host='0.0.0.0', port=port, debug=True)

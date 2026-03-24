@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+.env
+.env.*
+*.sqlite3
+*.db
+instance/
+*.egg-info/
+.eggs/
+
+# VS Code
+.vscode/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# Node.js
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test/coverage
+.coverage
+coverage/
+htmlcov/
+
+# Build
+build/
+dist/
+*.egg
+
+# Supabase
+supabase/.temp/
+
+# Misc
+*.bak
+*.swp
+*.swo
+
+# Ignore test DB scripts
+backend/test_db_connection.py
+
+# Ignore local data
+backend/*.sqlite3
+ml-service/*.sqlite3
+
+# Ignore production secrets
+backend/.env
+ml-service/.env
