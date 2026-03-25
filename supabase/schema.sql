@@ -34,11 +34,18 @@ CREATE TABLE IF NOT EXISTS income (
 -- Expenses table
 CREATE TABLE IF NOT EXISTS expenses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES auth.users(id),
+    user_id UUID REFERENCES users(id),
     amount NUMERIC(12,2) NOT NULL,
     category VARCHAR(50) NOT NULL,
     description TEXT,
     date DATE NOT NULL,
+    payment_method VARCHAR(30),
+    merchant VARCHAR(100),
+    receipt_url TEXT,
+    recurring BOOLEAN DEFAULT FALSE,
+    tags TEXT,
+    status VARCHAR(20),
+    notes TEXT,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -46,12 +53,16 @@ CREATE TABLE IF NOT EXISTS expenses (
 -- Budgets table
 CREATE TABLE IF NOT EXISTS budgets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES auth.users(id),
+    user_id UUID REFERENCES users(id),
     name VARCHAR(100),
     category VARCHAR(50) NOT NULL,
     amount NUMERIC(12,2) NOT NULL,
     month VARCHAR(7),
     alert_threshold NUMERIC(5,2) DEFAULT 80,
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    rollover BOOLEAN DEFAULT FALSE,
+    spent NUMERIC(12,2) DEFAULT 0,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -60,7 +71,7 @@ CREATE TABLE IF NOT EXISTS budgets (
 -- Savings Goals table
 CREATE TABLE IF NOT EXISTS savings_goals (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES auth.users(id),
+    user_id UUID REFERENCES users(id),
     name VARCHAR(100),
     category VARCHAR(50),
     target_amount NUMERIC(12,2) NOT NULL,
@@ -74,7 +85,7 @@ CREATE TABLE IF NOT EXISTS savings_goals (
 -- Predictions table
 CREATE TABLE IF NOT EXISTS predictions (
     id SERIAL PRIMARY KEY,
-    user_id UUID REFERENCES auth.users(id),
+    user_id UUID REFERENCES users(id),
     predicted_value NUMERIC(12,2) NOT NULL,
     month VARCHAR(7) NOT NULL -- e.g., '2024-03'
 );
@@ -104,7 +115,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- Recurring Transactions table
 CREATE TABLE IF NOT EXISTS recurring_transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES auth.users(id),
+    user_id UUID REFERENCES users(id),
     name VARCHAR(100),
     type VARCHAR(50),
     amount NUMERIC(12,2) NOT NULL,
@@ -123,7 +134,7 @@ CREATE TABLE IF NOT EXISTS recurring_transactions (
 -- Notifications table
 CREATE TABLE IF NOT EXISTS notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES auth.users(id),
+    user_id UUID REFERENCES users(id),
     title VARCHAR(255),
     message TEXT,
     type VARCHAR(50),
@@ -135,7 +146,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 
 CREATE TABLE IF NOT EXISTS reports (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES auth.users(id),
+    user_id UUID REFERENCES users(id),
     report_type VARCHAR(50),
     date_range JSONB,
     format VARCHAR(20),
@@ -161,3 +172,33 @@ CREATE TABLE IF NOT EXISTS login_otps (
     expires_at TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Migration: Add description column to budgets table (if it doesn't exist)
+-- Run this if you're updating an existing database
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name='budgets' AND column_name='description'
+    ) THEN
+        ALTER TABLE budgets ADD COLUMN description TEXT;
+        RAISE NOTICE 'Added description column to budgets table';
+    ELSE
+
+        RAISE NOTICE 'Description column already exists in budgets table';
+    END IF;
+END $$;
+
+-- Migration: Add is_active column to budgets table (if it doesn't exist)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name='budgets' AND column_name='is_active'
+    ) THEN
+        ALTER TABLE budgets ADD COLUMN is_active BOOLEAN DEFAULT TRUE;
+        RAISE NOTICE 'Added is_active column to budgets table';
+    ELSE
+        RAISE NOTICE 'is_active column already exists in budgets table';
+    END IF;
+END $$;
