@@ -1,3 +1,4 @@
+
 import os
 import smtplib
 import random
@@ -19,24 +20,305 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from dotenv import load_dotenv
 import json
+import requests
+import pickle
 load_dotenv()
+
+# Enhanced predictor class for expense prediction
+class ExpensePredictor:
+    def __init__(self):
+        self.model = LinearRegression()
+        self.scaler = StandardScaler()
+        self.is_trained = False
+        self.feature_columns = []
+        
+    def prepare_data(self, data):
+        """Prepare expense data for training with enhanced features"""
+        try:
+            if isinstance(data, list):
+                df = pd.DataFrame(data)
+            else:
+                # Convert database results to DataFrame
+                df = pd.DataFrame(data) if data else pd.DataFrame()
+            
+            if df.empty:
+                return df
+            
+            # Convert date to datetime and extract features
+            if 'date' in df.columns:
+                df['date'] = pd.to_datetime(df['date'])
+                df['month'] = df['date'].dt.month
+                df['year'] = df['date'].dt.year
+                df['day_of_week'] = df['date'].dt.dayofweek
+                df['day_of_month'] = df['date'].dt.day
+                
+                # Add seasonal features
+                df['quarter'] = df['date'].dt.quarter
+                df['is_weekend'] = (df['day_of_week'] >= 5).astype(int)
+                
+                # Add cyclical features
+                df['month_sin'] = np.sin(2 * np.pi * df['month'] / 12)
+                df['month_cos'] = np.cos(2 * np.pi * df['month'] / 12)
+                
+                # One-hot encode categories if present
+                if 'category' in df.columns:
+                    df = pd.get_dummies(df, columns=['category'], prefix='cat')
+            
+            return df
+        except Exception as e:
+            print(f"Error preparing data: {e}")
+            return pd.DataFrame()
+    
+    def train(self, expenses):
+        """Train the prediction model with enhanced features"""
+        try:
+            if not expenses:
+                return {'status': 'error', 'error': 'No expense data provided for training'}
+            
+            df = self.prepare_data(expenses)
+            
+            if df.empty:
+                return {'status': 'error', 'error': 'Failed to prepare training data'}
+            
+            # Features for training (exclude non-feature columns)
+            exclude_columns = ['amount', 'date', 'description', 'created_at', 'updated_at']
+            feature_columns = [col for col in df.columns if col not in exclude_columns]
+            
+            if not feature_columns:
+                return {'status': 'error', 'error': 'No valid features found for training'}
+            
+            X = df[feature_columns]
+            y = df['amount']
+            
+            # Split data
+            if len(X) < 2:
+                return {'status': 'error', 'error': 'Not enough data points for training'}
+            
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+            
+            # Scale features
+            X_train_scaled = self.scaler.fit_transform(X_train)
+            X_test_scaled = self.scaler.transform(X_test)
+            
+            # Train model
+            self.model.fit(X_train_scaled, y_train)
+            
+            # Evaluate
+            y_pred = self.model.predict(X_test_scaled)
+            mae = mean_absolute_error(y_test, y_pred)
+            mse = mean_squared_error(y_test, y_pred)
+            r2 = r2_score(y_test, y_pred)
+            
+            self.is_trained = True
+            self.feature_columns = feature_columns
+            
+            return {
+                'status': 'success',
+                'mae': mae,
+                'mse': mse,
+                'r2': r2,
+                'message': 'Model trained successfully',
+                'features_used': feature_columns,
+                'training_samples': len(X_train)
+            }
+            
+        except Exception as e:
+            return {'status': 'error', 'error': str(e)}
+    
+    def predict_next_month(self, expenses, target_month):
+        """Predict expenses for next month with category breakdown"""
+        try:
+            if not self.is_trained:
+                # Train the model if not already trained
+                result = self.train(expenses)
+                if result['status'] == 'error':
+                    return result
+            
+            # Prepare historical data
+            df = self.prepare_data(expenses)
+            
+            if df.empty:
+                return {'status': 'error', 'error': 'No valid expense data for prediction'}
+            
+            # Get unique categories from training data
+            category_columns = [col for col in df.columns if col.startswith('cat_')]
+            
+            # Create prediction data for target month
+            target_date = datetime.datetime.strptime(target_month, '%Y-%m')
+            predictions = []
+            
+            if category_columns:
+                # Category-based predictions
+                for cat_col in category_columns:
+                    category_name = cat_col.replace('cat_', '')
+                    
+                    # Create future data for this category
+                    future_data = {
+                        'month': target_date.month,
+                        'year': target_date.year,
+                        'day_of_week': target_date.weekday(),
+                        'day_of_month': 1,
+                        'quarter': (target_date.month - 1) // 3 + 1,
+                        'is_weekend': 1 if target_date.weekday() >= 5 else 0,
+                        'month_sin': np.sin(2 * np.pi * target_date.month / 12),
+                        'month_cos': np.cos(2 * np.pi * target_date.month / 12),
+                        cat_col: 1  # This category is active
+                    }
+                    
+                    # Set other category columns to 0
+                    for other_cat in category_columns:
+                        if other_cat != cat_col:
+                            future_data[other_cat] = 0
+                    
+                    prepared_data = self.prepare_data([future_data])
+                    
+                    # Ensure all required columns are present
+                    for col in self.feature_columns:
+                        if col not in prepared_data.columns:
+                            prepared_data[col] = 0
+                    
+                    X_future = prepared_data[self.feature_columns]
+                    X_future_scaled = self.scaler.transform(X_future)
+                    prediction = self.model.predict(X_future_scaled)[0]
+                    
+                    if prediction > 0:
+                        predictions.append({
+                            'category': category_name,
+                            'predicted_amount': round(float(prediction), 2),
+                            'month': target_month
+                        })
+                
+                total_predicted = sum(p['predicted_amount'] for p in predictions)
+                
+                return {
+                    'status': 'success',
+                    'predictions': predictions,
+                    'total_predicted': round(total_predicted, 2),
+                    'month': target_month,
+                    'prediction_type': 'category_based'
+                }
+            
+            else:
+                # Fallback to simple time-based prediction
+                year, month_num = map(int, target_month.split('-'))
+                time_index = (year - 2024) * 12 + (month_num - 1)
+                month_sin = np.sin(2 * np.pi * month_num / 12)
+                month_cos = np.cos(2 * np.pi * month_num / 12)
+                
+                feature_values = [[time_index, month_sin, month_cos]]
+                
+                # Add other required features with default values
+                feature_dict = {
+                    'time_index': time_index,
+                    'month_sin': month_sin,
+                    'month_cos': month_cos,
+                    'month': month_num,
+                    'year': year,
+                    'day_of_week': target_date.weekday(),
+                    'day_of_month': 1,
+                    'quarter': (month_num - 1) // 3 + 1,
+                    'is_weekend': 1 if target_date.weekday() >= 5 else 0
+                }
+                
+                # Ensure all feature columns are present
+                for col in self.feature_columns:
+                    if col not in feature_dict:
+                        feature_dict[col] = 0
+                
+                X_future = np.array([[feature_dict.get(col, 0) for col in self.feature_columns]])
+                X_future_scaled = self.scaler.transform(X_future)
+                prediction = self.model.predict(X_future_scaled)[0]
+                
+                return {
+                    'status': 'success',
+                    'prediction': round(float(prediction), 2),
+                    'month': target_month,
+                    'prediction_type': 'time_based',
+                    'confidence_score': 0.75
+                }
+                
+        except Exception as e:
+            return {'status': 'error', 'error': str(e)}
+    
+    def generate_insights(self, expenses):
+        """Generate AI-powered financial insights with enhanced analysis"""
+        try:
+            if not expenses:
+                return {'status': 'error', 'error': 'No expense data provided'}
+            
+            df = pd.DataFrame(expenses) if isinstance(expenses, list) else pd.DataFrame([expenses])
+            
+            if df.empty or 'amount' not in df.columns:
+                return {'status': 'error', 'error': 'Invalid expense data format'}
+            
+            # Calculate basic statistics
+            total_expenses = df['amount'].sum()
+            avg_expense = df['amount'].mean()
+            
+            # Category breakdown
+            category_totals = {}
+            if 'category' in df.columns:
+                category_totals = df.groupby('category')['amount'].sum().to_dict()
+            
+            # Spending trends
+            if 'date' in df.columns:
+                df['date'] = pd.to_datetime(df['date'])
+                monthly_totals = df.groupby(df['date'].dt.to_period('M'))['amount'].sum()
+            else:
+                monthly_totals = pd.Series([total_expenses])
+            
+            # Generate insights
+            insights = []
+            
+            # Top spending category
+            if category_totals:
+                top_category = max(category_totals, key=category_totals.get)
+                insights.append(f"Your highest spending category is {top_category} at ${category_totals[top_category]:.2f}")
+            
+            # Spending trend
+            if len(monthly_totals) > 1:
+                recent_month = monthly_totals.iloc[-1]
+                previous_month = monthly_totals.iloc[-2]
+                if recent_month > previous_month:
+                    insights.append(f"Your spending increased by ${recent_month - previous_month:.2f} this month")
+                else:
+                    insights.append(f"Good news! Your spending decreased by ${previous_month - recent_month:.2f} this month")
+            
+            # Average spending insight
+            insights.append(f"Your average expense is ${avg_expense:.2f}")
+            
+            # Category recommendations
+            for category, amount in category_totals.items():
+                if amount > total_expenses * 0.3:
+                    insights.append(f"Consider reviewing {category} spending - it's {amount/total_expenses*100:.1f}% of your total expenses")
+            
+            # Spending frequency insight
+            if len(df) > 0:
+                if 'date' in df.columns:
+                    date_range = (df['date'].max() - df['date'].min()).days
+                    if date_range > 0:
+                        daily_avg = total_expenses / date_range
+                        insights.append(f"You spend approximately ${daily_avg:.2f} per day on average")
+            
+            return {
+                'status': 'success',
+                'insights': insights,
+                'total_expenses': round(total_expenses, 2),
+                'average_expense': round(avg_expense, 2),
+                'category_breakdown': {k: round(v, 2) for k, v in category_totals.items()},
+                'transaction_count': len(df),
+                'monthly_trend': {str(k): v for k, v in monthly_totals.items()} if not monthly_totals.empty else {}
+            }
+            
+        except Exception as e:
+            return {'status': 'error', 'error': str(e)}
+
+# Initialize predictor
+predictor = ExpensePredictor()
 
 app = Flask(__name__)
 CORS(app)
 
-# Utility to convert Decimal to float recursively
-def convert_decimal(obj):
-    if isinstance(obj, list):
-        return [convert_decimal(i) for i in obj]
-    elif isinstance(obj, dict):
-        return {k: convert_decimal(v) for k, v in obj.items()}
-    elif isinstance(obj, decimal.Decimal):
-        return float(obj)
-    elif isinstance(obj, (datetime.date, datetime.datetime)):
-        return obj.isoformat()
-    else:
-        return obj
-######################## JWT REQUIRED DECORATOR (MOVED UP) ########################
 def jwt_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -54,6 +336,184 @@ def jwt_required(f):
             return jsonify({'error': 'Invalid token'}), 401
         return f(*args, **kwargs)
     return decorated
+# ==================== ML PREDICTION ENDPOINTS ====================
+
+# Enhanced Training Endpoint
+@app.route('/api/train-model', methods=['POST'])
+@jwt_required
+def train_ml_model():
+    """Train the ML model with user's expense data"""
+    try:
+        user_id = g.user_id if hasattr(g, 'user_id') else None
+        
+        # Fetch user's expense data from database
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT amount, category, date, description
+            FROM expenses 
+            WHERE user_id = %s 
+            AND date >= NOW() - INTERVAL '12 months'
+            ORDER BY date ASC
+        ''', (user_id,))
+        
+        expense_data = []
+        for row in cur.fetchall():
+            expense_data.append({
+                'amount': float(row[0]),
+                'category': row[1],
+                'date': row[2].strftime('%Y-%m-%d'),
+                'description': row[3]
+            })
+        
+        cur.close()
+        conn.close()
+        
+        if not expense_data:
+            return jsonify({'error': 'No expense data found for training. Add some expenses first.'}), 400
+        
+        # Train the model
+        result = predictor.train(expense_data)
+        
+        if result['status'] == 'error':
+            return jsonify(result), 500
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Model trained successfully',
+            'training_results': result,
+            'data_points_used': len(expense_data)
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+# Linear Regression Prediction Endpoint (scikit-learn)
+@app.route('/api/predict/linear', methods=['POST'])
+@jwt_required
+def predict_linear():
+    """Predict using local scikit-learn linear regression model and store in DB"""
+    try:
+        data = request.get_json()
+        user_id = g.user_id if hasattr(g, 'user_id') else None
+        features = np.array(data.get('features')).reshape(1, -1)
+        prediction_type = data.get('prediction_type', 'linear_regression')
+        input_features = data.get('features')
+        category = data.get('category')
+        target_date = data.get('target_date')
+        month = data.get('month')
+        model_version = data.get('model_version', '1.0')
+        notes = data.get('notes')
+        # Load model and predict
+        try:
+            with open('linear_model.pkl', 'rb') as f:
+                model_data = pickle.load(f)
+            
+            model = model_data['model']
+            scaler = model_data['scaler']
+            features_list = model_data['features']
+            
+            # For time-based prediction, create features from target month
+            if month:
+                year, month_num = map(int, month.split('-')) if '-' in month else (2024, int(month))
+                time_index = (year - 2024) * 12 + (month_num - 1)
+                month_sin = np.sin(2 * np.pi * month_num / 12)
+                month_cos = np.cos(2 * np.pi * month_num / 12)
+                
+                # Create feature array in the correct order
+                feature_values = [[time_index, month_sin, month_cos]]
+                
+                # Scale features
+                features_scaled = scaler.transform(feature_values)
+                
+                # Make prediction
+                prediction = model.predict(features_scaled)
+                predicted_value = float(prediction[0])
+                
+                # Calculate confidence based on model performance
+                confidence_score = 0.75  # Default confidence
+            else:
+                # Fallback to simple prediction if no month provided
+                predicted_value = model_data['training_data_stats']['mean_expense']
+                confidence_score = 0.5
+                
+        except FileNotFoundError:
+            return jsonify({'error': 'Model not found. Please train the model first.'}), 500
+        except Exception as e:
+            return jsonify({'error': f'Prediction error: {str(e)}'}), 500
+        status = 'completed'
+        error_message = None
+        # Insert into DB
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            INSERT INTO predictions (
+                user_id, predicted_value, month, prediction_type, input_features, confidence_score, status, error_message, created_at, updated_at, model_version, notes, category, target_date
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW(), %s, %s, %s, %s
+            ) RETURNING id, user_id, predicted_value, month, prediction_type, input_features, confidence_score, status, error_message, created_at, updated_at, model_version, notes, category, target_date
+        ''', (
+            user_id,
+            predicted_value,
+            month,
+            prediction_type,
+            json.dumps(input_features),
+            confidence_score,
+            status,
+            error_message,
+            model_version,
+            notes,
+            category,
+            target_date
+        ))
+        new_pred = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        columns = ['id', 'user_id', 'predicted_value', 'month', 'prediction_type', 'input_features', 'confidence_score', 'status', 'error_message', 'created_at', 'updated_at', 'model_version', 'notes', 'category', 'target_date']
+        result = dict(zip(columns, new_pred))
+        return jsonify({'prediction': result, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+# Gemini Insights Endpoint
+@app.route('/api/insights/gemini', methods=['POST'])
+@jwt_required
+def gemini_insights():
+    """Get advanced insights from Gemini API"""
+    try:
+        data = request.get_json()
+        gemini_api_key = os.getenv('GEMINI_KEY')
+        if not gemini_api_key:
+            return jsonify({'error': 'Gemini API key not set', 'status': 'error'}), 500
+        # Example Gemini API call (replace URL and payload as needed)
+        response = requests.post(
+            'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {gemini_api_key}'
+            },
+            json=data
+        )
+        if response.status_code == 200:
+            return jsonify({'insights': response.json(), 'status': 'success'})
+        else:
+            return jsonify({'error': response.text, 'status': 'error'}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+# Utility to convert Decimal to float recursively
+def convert_decimal(obj):
+    if isinstance(obj, list):
+        return [convert_decimal(i) for i in obj]
+    elif isinstance(obj, dict):
+        return {k: convert_decimal(v) for k, v in obj.items()}
+    elif isinstance(obj, decimal.Decimal):
+        return float(obj)
+    elif isinstance(obj, (datetime.date, datetime.datetime)):
+        return obj.isoformat()
+    else:
+        return obj
 
 # ==================== REPORTS ====================
 @app.route('/api/reports/<report_id>', methods=['GET'])
@@ -110,25 +570,6 @@ def get_db_conn():
     return psycopg2.connect(DB_URL)
 
 
-
-######################## JWT REQUIRED DECORATOR (MOVED UP) ########################
-def jwt_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        auth_header = request.headers.get('Authorization', None)
-        if not auth_header or not auth_header.startswith('Bearer '):
-            return jsonify({'error': 'Missing or invalid Authorization header'}), 401
-        token = auth_header.split(' ')[1]
-        try:
-            payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
-            g.user_id = payload['user_id']
-            g.email = payload['email']
-        except jwt.ExpiredSignatureError:
-            return jsonify({'error': 'Token expired'}), 401
-        except jwt.InvalidTokenError:
-            return jsonify({'error': 'Invalid token'}), 401
-        return f(*args, **kwargs)
-    return decorated
 
 # ==================== SAVINGS GOALS ENDPOINTS (PostgreSQL) ====================
 @app.route('/api/savings-goals', methods=['GET'])
@@ -444,26 +885,6 @@ def generate_jwt(user_id, email):
     }
     token = jwt.encode(payload, JWT_SECRET, algorithm='HS256')
     return token
-
-# --- JWT REQUIRED DECORATOR ---
-def jwt_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        auth_header = request.headers.get('Authorization', None)
-        if not auth_header or not auth_header.startswith('Bearer '):
-            return jsonify({'error': 'Missing or invalid Authorization header'}), 401
-        token = auth_header.split(' ')[1]
-        try:
-            payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
-            g.user_id = payload['user_id']
-            g.email = payload['email']
-        except jwt.ExpiredSignatureError:
-            return jsonify({'error': 'Token expired'}), 401
-        except jwt.InvalidTokenError:
-            return jsonify({'error': 'Invalid token'}), 401
-        return f(*args, **kwargs)
-    return decorated
-
 
 # --- DEDICATED REGISTER ENDPOINT (pending_users) ---
 @app.route('/api/register', methods=['POST'])
@@ -1723,56 +2144,173 @@ def health_check():
         }), 500
 
 @app.route('/api/predict', methods=['POST'])
+@jwt_required
 def predict_expenses():
-    """Predict expenses for next month"""
+    """Enhanced expense prediction using real database data"""
     try:
         data = request.get_json()
-        if not data or 'expenses' not in data or 'target_month' not in data:
-            return jsonify({'error': 'Missing required fields: expenses, target_month'}), 400
-        expenses = data['expenses']
-        target_month = data['target_month']
-        if not expenses:
-            return jsonify({'error': 'No expense data provided'}), 400
-        result = predictor.predict_next_month(expenses, target_month)
+        user_id = g.user_id if hasattr(g, 'user_id') else None
+        
+        # Get target month from request
+        target_month = data.get('target_month')
+        if not target_month:
+            target_month = datetime.datetime.now().strftime('%Y-%m')
+        
+        # Fetch user's expense data from database
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT amount, category, date, description
+            FROM expenses 
+            WHERE user_id = %s 
+            AND date >= NOW() - INTERVAL '12 months'
+            ORDER BY date ASC
+        ''', (user_id,))
+        
+        expense_data = []
+        for row in cur.fetchall():
+            expense_data.append({
+                'amount': float(row[0]),
+                'category': row[1],
+                'date': row[2].strftime('%Y-%m-%d'),
+                'description': row[3]
+            })
+        
+        cur.close()
+        conn.close()
+        
+        if not expense_data:
+            return jsonify({'error': 'No expense data found for prediction. Add some expenses first.'}), 400
+        
+        # Make prediction using enhanced predictor
+        result = predictor.predict_next_month(expense_data, target_month)
+        
         if result['status'] == 'error':
-            return jsonify(result), 500
-        return jsonify(result)
+            # Store failed prediction
+            conn = get_db_conn()
+            cur = conn.cursor()
+            cur.execute('''
+                INSERT INTO predictions (
+                    user_id, predicted_value, month, prediction_type, input_features, confidence_score, status, error_message, created_at, updated_at, model_version, notes, category, target_date
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW(), %s, %s, %s, %s
+                ) RETURNING id, user_id, predicted_value, month, prediction_type, input_features, confidence_score, status, error_message, created_at, updated_at, model_version, notes, category, target_date
+            ''', (
+                user_id,
+                None,
+                target_month,
+                result.get('prediction_type', 'enhanced_ml'),
+                json.dumps(expense_data[:10]),  # Store sample of input data
+                None,
+                'failed',
+                result.get('error'),
+                '2.0',  # Enhanced model version
+                'Enhanced ML prediction using real data',
+                None,
+                target_month + '-01'  # First day of month
+            ))
+            new_pred = cur.fetchone()
+            conn.commit()
+            cur.close()
+            conn.close()
+            columns = ['id', 'user_id', 'predicted_value', 'month', 'prediction_type', 'input_features', 'confidence_score', 'status', 'error_message', 'created_at', 'updated_at', 'model_version', 'notes', 'category', 'target_date']
+            result_db = dict(zip(columns, new_pred))
+            return jsonify({'prediction': result_db, 'status': 'error'}), 500
+        
+        # Store successful prediction
+        if 'total_predicted' in result:
+            predicted_value = result['total_predicted']
+        else:
+            predicted_value = result.get('prediction', 0)
+        
+        confidence_score = result.get('confidence_score', 0.85)
+        status = 'completed'
+        error_message = None
+        
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            INSERT INTO predictions (
+                user_id, predicted_value, month, prediction_type, input_features, confidence_score, status, error_message, created_at, updated_at, model_version, notes, category, target_date
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW(), %s, %s, %s, %s
+            ) RETURNING id, user_id, predicted_value, month, prediction_type, input_features, confidence_score, status, error_message, created_at, updated_at, model_version, notes, category, target_date
+        ''', (
+            user_id,
+            predicted_value,
+            target_month,
+            result.get('prediction_type', 'enhanced_ml'),
+            json.dumps(expense_data[:10]),  # Store sample of input data
+            confidence_score,
+            status,
+            error_message,
+            '2.0',  # Enhanced model version
+            'Enhanced ML prediction using real data',
+            None,
+            target_month + '-01'  # First day of month
+        ))
+        new_pred = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        columns = ['id', 'user_id', 'predicted_value', 'month', 'prediction_type', 'input_features', 'confidence_score', 'status', 'error_message', 'created_at', 'updated_at', 'model_version', 'notes', 'category', 'target_date']
+        result_db = dict(zip(columns, new_pred))
+        
+        # Combine prediction result with database record
+        response_data = {
+            'prediction': result_db,
+            'enhanced_prediction': result,
+            'status': 'success'
+        }
+        
+        return jsonify(response_data)
+        
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/api/insights', methods=['POST'])
+@jwt_required
 def generate_insights():
-    """Generate AI-powered financial insights"""
+    """Generate AI-powered financial insights using real database data"""
     try:
-        data = request.get_json()
-        if not data or 'expenses' not in data:
-            return jsonify({'error': 'Missing required field: expenses'}), 400
-        expenses = data['expenses']
-        if not expenses:
-            return jsonify({'error': 'No expense data provided'}), 400
-        result = predictor.generate_insights(expenses)
+        user_id = g.user_id if hasattr(g, 'user_id') else None
+        
+        # Fetch user's expense data from database
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT amount, category, date, description
+            FROM expenses 
+            WHERE user_id = %s 
+            AND date >= NOW() - INTERVAL '12 months'
+            ORDER BY date DESC
+        ''', (user_id,))
+        
+        expense_data = []
+        for row in cur.fetchall():
+            expense_data.append({
+                'amount': float(row[0]),
+                'category': row[1],
+                'date': row[2].strftime('%Y-%m-%d'),
+                'description': row[3]
+            })
+        
+        cur.close()
+        conn.close()
+        
+        if not expense_data:
+            return jsonify({'error': 'No expense data found for insights. Add some expenses first.'}), 400
+        
+        # Generate insights using enhanced predictor
+        result = predictor.generate_insights(expense_data)
+        
         if result['status'] == 'error':
             return jsonify(result), 500
+        
         return jsonify(result)
+        
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/train', methods=['POST'])
-def train_model():
-    """Train the ML model"""
-    try:
-        data = request.get_json()
-        if not data or 'expenses' not in data:
-            return jsonify({'error': 'Missing required field: expenses'}), 400
-        expenses = data['expenses']
-        if not expenses:
-            return jsonify({'error': 'No expense data provided'}), 400
-        result = predictor.train(expenses)
-        if result['status'] == 'error':
-            return jsonify(result), 500
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'error': str(e)}, 500)
+        return jsonify({'error': str(e), 'status': 'error'}), 500
 
 # ==================== UTILITY ENDPOINTS ====================
 @app.route('/api/data-status', methods=['GET'])

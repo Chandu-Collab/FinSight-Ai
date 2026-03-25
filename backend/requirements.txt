@@ -3,3 +3,9 @@ uvicorn
 scikit-learn
 pandas
 numpy
+psycopg2-binary
+python-dotenv
+flask
+flask-cors
+pyjwt
+requests

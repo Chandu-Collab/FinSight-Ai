@@ -97,7 +97,18 @@ CREATE TABLE IF NOT EXISTS predictions (
     id SERIAL PRIMARY KEY,
     user_id UUID REFERENCES users(id),
     predicted_value NUMERIC(12,2) NOT NULL,
-    month VARCHAR(7) NOT NULL -- e.g., '2024-03'
+    month VARCHAR(7) NOT NULL, -- e.g., '2024-03'
+    prediction_type VARCHAR(50),
+    input_features JSONB,
+    confidence_score NUMERIC(5,4),
+    status VARCHAR(20) DEFAULT 'completed',
+    error_message TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    model_version VARCHAR(50),
+    notes TEXT,
+    category VARCHAR(50),
+    target_date DATE
 );
 
 -- Users table
