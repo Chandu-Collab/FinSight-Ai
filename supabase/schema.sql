@@ -182,6 +182,16 @@ CREATE TABLE IF NOT EXISTS reports (
     format VARCHAR(20),
     generated_at TIMESTAMP,
     data JSONB,
+    status VARCHAR(20),
+    file_url TEXT,
+    error_message TEXT,
+    requested_at TIMESTAMP,
+    completed_at TIMESTAMP,
+    name VARCHAR(100),
+    description TEXT,
+    is_public BOOLEAN DEFAULT FALSE,
+    template_id UUID,
+    tags TEXT,
     created_at TIMESTAMP DEFAULT NOW()
 );
 

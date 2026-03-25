@@ -3,6 +3,7 @@ import smtplib
 import random
 import string
 import datetime
+import decimal
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import psycopg2
@@ -22,6 +23,91 @@ load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
+
+# Utility to convert Decimal to float recursively
+def convert_decimal(obj):
+    if isinstance(obj, list):
+        return [convert_decimal(i) for i in obj]
+    elif isinstance(obj, dict):
+        return {k: convert_decimal(v) for k, v in obj.items()}
+    elif isinstance(obj, decimal.Decimal):
+        return float(obj)
+    elif isinstance(obj, (datetime.date, datetime.datetime)):
+        return obj.isoformat()
+    else:
+        return obj
+######################## JWT REQUIRED DECORATOR (MOVED UP) ########################
+def jwt_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth_header = request.headers.get('Authorization', None)
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({'error': 'Missing or invalid Authorization header'}), 401
+        token = auth_header.split(' ')[1]
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
+            g.user_id = payload['user_id']
+            g.email = payload['email']
+        except jwt.ExpiredSignatureError:
+            return jsonify({'error': 'Token expired'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'error': 'Invalid token'}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+# ==================== REPORTS ====================
+@app.route('/api/reports/<report_id>', methods=['GET'])
+@jwt_required
+def get_report_by_id(report_id):
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, user_id, report_type, date_range, format, generated_at, data, status, file_url, error_message, requested_at, completed_at, name, description, is_public, template_id, tags, created_at
+            FROM reports WHERE id = %s
+        ''', (report_id,))
+        row = cur.fetchone()
+        if not row:
+            cur.close()
+            conn.close()
+            return jsonify({'error': 'Report not found', 'status': 'error'}), 404
+        columns = ['id', 'user_id', 'report_type', 'date_range', 'format', 'generated_at', 'data', 'status', 'file_url', 'error_message', 'requested_at', 'completed_at', 'name', 'description', 'is_public', 'template_id', 'tags', 'created_at']
+        report_dict = dict(zip(columns, row))
+        # Convert Decimal and date types for JSON serialization
+        report_dict = convert_decimal(report_dict)
+        cur.close()
+        conn.close()
+        return jsonify({'data': report_dict, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+import decimal
+import datetime
+
+# Utility to convert Decimal to float recursively
+def convert_decimal(obj):
+    if isinstance(obj, list):
+        return [convert_decimal(i) for i in obj]
+    elif isinstance(obj, dict):
+        return {k: convert_decimal(v) for k, v in obj.items()}
+    elif isinstance(obj, decimal.Decimal):
+        return float(obj)
+    elif isinstance(obj, (datetime.date, datetime.datetime)):
+        return obj.isoformat()
+    else:
+        return obj
+
+# JWT_SECRET and other configuration should be defined after the first app instance
+
+# --- CONFIG ---
+GMAIL_USER = os.environ.get('GMAIL_USER')
+GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD')
+EMAIL_FROM = os.environ.get('EMAIL_FROM')
+DB_URL = os.environ.get('DATABASE_URL')
+JWT_SECRET = os.environ.get('JWT_SECRET', 'your_super_secret_jwt_key_here')
+
+# --- DB CONNECTION ---
+def get_db_conn():
+    return psycopg2.connect(DB_URL)
 
 
 
@@ -331,17 +417,6 @@ def delete_budget(budget_id):
             return jsonify({'error': 'Budget not found', 'status': 'error'}), 404
     except Exception as e:
         return jsonify({'error': str(e), 'status': 'error'}), 500
-
-# --- CONFIG ---
-GMAIL_USER = os.environ.get('GMAIL_USER')
-GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD')
-EMAIL_FROM = os.environ.get('EMAIL_FROM')
-DB_URL = os.environ.get('DATABASE_URL')
-JWT_SECRET = os.environ.get('JWT_SECRET', 'your_super_secret_jwt_key_here')
-
-# --- DB CONNECTION ---
-def get_db_conn():
-    return psycopg2.connect(DB_URL)
 
 # --- OTP GENERATION ---
 def generate_otp(length=6):
@@ -1270,6 +1345,7 @@ def delete_income(income_id):
 
 # ==================== REPORTS ====================
 @app.route('/api/reports', methods=['GET'])
+@jwt_required
 def get_reports():
     """Get all reports"""
     user_id = request.args.get('user_id', 'demo-user-001')
@@ -1277,11 +1353,11 @@ def get_reports():
         conn = get_db_conn()
         cur = conn.cursor()
         cur.execute('''
-            SELECT id, user_id, report_type, date_range, format, generated_at, data, created_at
+            SELECT id, user_id, report_type, date_range, format, generated_at, data, status, file_url, error_message, requested_at, completed_at, name, description, is_public, template_id, tags, created_at
             FROM reports WHERE user_id = %s
         ''', (user_id,))
         rows = cur.fetchall()
-        columns = ['id', 'user_id', 'report_type', 'date_range', 'format', 'generated_at', 'data', 'created_at']
+        columns = ['id', 'user_id', 'report_type', 'date_range', 'format', 'generated_at', 'data', 'status', 'file_url', 'error_message', 'requested_at', 'completed_at', 'name', 'description', 'is_public', 'template_id', 'tags', 'created_at']
         user_reports = [dict(zip(columns, row)) for row in rows]
         cur.close()
         conn.close()
@@ -1290,6 +1366,7 @@ def get_reports():
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/api/reports', methods=['POST'])
+@jwt_required
 def generate_report():
     """Generate new report"""
     try:
@@ -1336,16 +1413,19 @@ def generate_report():
             'expenses': user_expenses,
             'budgets': user_budgets,
             'savings_goals': user_goals,
-            'total_income': sum(inc['amount'] for inc in user_income),
-            'total_expenses': sum(exp['amount'] for exp in user_expenses),
-            'net_income': sum(inc['amount'] for inc in user_income) - sum(exp['amount'] for exp in user_expenses),
+            'total_income': sum(float(inc['amount']) for inc in user_income),
+            'total_expenses': sum(float(exp['amount']) for exp in user_expenses),
+            'net_income': sum(float(inc['amount']) for inc in user_income) - sum(float(exp['amount']) for exp in user_expenses),
             'budget_count': len(user_budgets),
             'savings_count': len(user_goals)
         }
+        report_data = convert_decimal(report_data)
         cur.execute('''
-            INSERT INTO reports (user_id, report_type, date_range, format, generated_at, data, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-            RETURNING id, user_id, report_type, date_range, format, generated_at, data, created_at
+            INSERT INTO reports (
+                user_id, report_type, date_range, format, generated_at, data, status, file_url, error_message, requested_at, completed_at, name, description, is_public, template_id, tags, created_at
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            ) RETURNING id, user_id, report_type, date_range, format, generated_at, data, status, file_url, error_message, requested_at, completed_at, name, description, is_public, template_id, tags, created_at
         ''', (
             user_id,
             report_type,
@@ -1353,10 +1433,20 @@ def generate_report():
             format_type,
             generated_at,
             json.dumps(report_data),
+            data.get('status'),
+            data.get('file_url'),
+            data.get('error_message'),
+            data.get('requested_at', generated_at),
+            data.get('completed_at'),
+            data.get('name'),
+            data.get('description'),
+            data.get('is_public', False),
+            data.get('template_id'),
+            data.get('tags'),
             generated_at
         ))
         new_report = cur.fetchone()
-        columns = ['id', 'user_id', 'report_type', 'date_range', 'format', 'generated_at', 'data', 'created_at']
+        columns = ['id', 'user_id', 'report_type', 'date_range', 'format', 'generated_at', 'data', 'status', 'file_url', 'error_message', 'requested_at', 'completed_at', 'name', 'description', 'is_public', 'template_id', 'tags', 'created_at']
         report_dict = dict(zip(columns, new_report))
         conn.commit()
         cur.close()
