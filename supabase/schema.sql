@@ -78,6 +78,16 @@ CREATE TABLE IF NOT EXISTS savings_goals (
     current_amount NUMERIC(12,2) DEFAULT 0,
     target_date DATE,
     description TEXT,
+    status VARCHAR(20) DEFAULT 'active',
+    priority VARCHAR(10) DEFAULT 'medium',
+    progress_percentage NUMERIC(5,2) DEFAULT 0,
+    image_url TEXT,
+    notes TEXT,
+    recurring_contribution NUMERIC(12,2) DEFAULT 0,
+    last_contribution_date DATE,
+    is_public BOOLEAN DEFAULT FALSE,
+    completion_date DATE,
+    motivation TEXT,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
