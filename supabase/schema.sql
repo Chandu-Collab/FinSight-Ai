@@ -137,6 +137,16 @@ CREATE TABLE IF NOT EXISTS recurring_transactions (
     start_date DATE,
     end_date DATE,
     occurrence_count INTEGER,
+    description TEXT,
+    last_run_date DATE,
+    run_count INTEGER DEFAULT 0,
+    max_occurrences INTEGER,
+    skip_count INTEGER DEFAULT 0,
+    failure_count INTEGER DEFAULT 0,
+    last_status VARCHAR(20),
+    notes TEXT,
+    timezone VARCHAR(50),
+    parent_transaction_id UUID REFERENCES recurring_transactions(id),
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );

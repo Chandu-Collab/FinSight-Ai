@@ -539,6 +539,7 @@ def protected():
 
 # ==================== RECURRING TRANSACTIONS ENDPOINTS (PostgreSQL) ====================
 @app.route('/api/recurring-transactions', methods=['GET'])
+@jwt_required
 def get_recurring_transactions():
     """Get all recurring transactions for a user"""
     user_id = request.args.get('user_id', 'demo-user-001')
@@ -546,11 +547,11 @@ def get_recurring_transactions():
         conn = get_db_conn()
         cur = conn.cursor()
         cur.execute('''
-            SELECT id, user_id, name, type, amount, frequency, category, source, is_active, next_date, start_date, end_date, occurrence_count, created_at, updated_at
+            SELECT id, user_id, name, type, amount, frequency, category, source, is_active, next_date, start_date, end_date, occurrence_count, description, last_run_date, run_count, max_occurrences, skip_count, failure_count, last_status, notes, timezone, parent_transaction_id, created_at, updated_at
             FROM recurring_transactions WHERE user_id = %s
         ''', (user_id,))
         rows = cur.fetchall()
-        columns = ['id', 'user_id', 'name', 'type', 'amount', 'frequency', 'category', 'source', 'is_active', 'next_date', 'start_date', 'end_date', 'occurrence_count', 'created_at', 'updated_at']
+        columns = ['id', 'user_id', 'name', 'type', 'amount', 'frequency', 'category', 'source', 'is_active', 'next_date', 'start_date', 'end_date', 'occurrence_count', 'description', 'last_run_date', 'run_count', 'max_occurrences', 'skip_count', 'failure_count', 'last_status', 'notes', 'timezone', 'parent_transaction_id', 'created_at', 'updated_at']
         user_recurring = [dict(zip(columns, row)) for row in rows]
         cur.close()
         conn.close()
@@ -559,6 +560,7 @@ def get_recurring_transactions():
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/api/recurring-transactions', methods=['POST'])
+@jwt_required
 def create_recurring_transaction():
     """Create new recurring transaction"""
     try:
@@ -568,9 +570,9 @@ def create_recurring_transaction():
         cur = conn.cursor()
         insert_query = '''
             INSERT INTO recurring_transactions (
-                user_id, name, type, amount, frequency, category, source, is_active, next_date, start_date, end_date, occurrence_count, created_at, updated_at
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            RETURNING id, user_id, name, type, amount, frequency, category, source, is_active, next_date, start_date, end_date, occurrence_count, created_at, updated_at
+                user_id, name, type, amount, frequency, category, source, is_active, next_date, start_date, end_date, occurrence_count, description, last_run_date, run_count, max_occurrences, skip_count, failure_count, last_status, notes, timezone, parent_transaction_id, created_at, updated_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, user_id, name, type, amount, frequency, category, source, is_active, next_date, start_date, end_date, occurrence_count, description, last_run_date, run_count, max_occurrences, skip_count, failure_count, last_status, notes, timezone, parent_transaction_id, created_at, updated_at
         '''
         values = (
             data.get('user_id'),
@@ -585,6 +587,16 @@ def create_recurring_transaction():
             data.get('start_date'),
             data.get('end_date'),
             data.get('occurrence_count'),
+            data.get('description'),
+            data.get('last_run_date'),
+            data.get('run_count', 0),
+            data.get('max_occurrences'),
+            data.get('skip_count', 0),
+            data.get('failure_count', 0),
+            data.get('last_status'),
+            data.get('notes'),
+            data.get('timezone'),
+            data.get('parent_transaction_id'),
             now,
             now
         )
@@ -593,27 +605,28 @@ def create_recurring_transaction():
         conn.commit()
         cur.close()
         conn.close()
-        columns = ['id', 'user_id', 'name', 'type', 'amount', 'frequency', 'category', 'source', 'is_active', 'next_date', 'start_date', 'end_date', 'occurrence_count', 'created_at', 'updated_at']
+        columns = ['id', 'user_id', 'name', 'type', 'amount', 'frequency', 'category', 'source', 'is_active', 'next_date', 'start_date', 'end_date', 'occurrence_count', 'description', 'last_run_date', 'run_count', 'max_occurrences', 'skip_count', 'failure_count', 'last_status', 'notes', 'timezone', 'parent_transaction_id', 'created_at', 'updated_at']
         rec_dict = dict(zip(columns, new_rec))
         return jsonify({'data': rec_dict, 'status': 'success'})
     except Exception as e:
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/api/recurring-transactions/<recurring_id>', methods=['GET'])
+@jwt_required
 def get_recurring_transaction_by_id(recurring_id):
     """Get recurring transaction by ID"""
     try:
         conn = get_db_conn()
         cur = conn.cursor()
         cur.execute('''
-            SELECT id, user_id, name, type, amount, frequency, category, source, is_active, next_date, start_date, end_date, occurrence_count, created_at, updated_at
+            SELECT id, user_id, name, type, amount, frequency, category, source, is_active, next_date, start_date, end_date, occurrence_count, description, last_run_date, run_count, max_occurrences, skip_count, failure_count, last_status, notes, timezone, parent_transaction_id, created_at, updated_at
             FROM recurring_transactions WHERE id = %s
         ''', (recurring_id,))
         row = cur.fetchone()
         cur.close()
         conn.close()
         if row:
-            columns = ['id', 'user_id', 'name', 'type', 'amount', 'frequency', 'category', 'source', 'is_active', 'next_date', 'start_date', 'end_date', 'occurrence_count', 'created_at', 'updated_at']
+            columns = ['id', 'user_id', 'name', 'type', 'amount', 'frequency', 'category', 'source', 'is_active', 'next_date', 'start_date', 'end_date', 'occurrence_count', 'description', 'last_run_date', 'run_count', 'max_occurrences', 'skip_count', 'failure_count', 'last_status', 'notes', 'timezone', 'parent_transaction_id', 'created_at', 'updated_at']
             return jsonify({'data': dict(zip(columns, row)), 'status': 'success'})
         else:
             return jsonify({'error': 'Recurring transaction not found', 'status': 'error'}), 404
@@ -621,6 +634,7 @@ def get_recurring_transaction_by_id(recurring_id):
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/api/recurring-transactions/<recurring_id>', methods=['PUT'])
+@jwt_required
 def update_recurring_transaction(recurring_id):
     """Update recurring transaction"""
     try:
@@ -628,7 +642,7 @@ def update_recurring_transaction(recurring_id):
         now = datetime.datetime.now()
         conn = get_db_conn()
         cur = conn.cursor()
-        fields = ['name', 'type', 'amount', 'frequency', 'category', 'source', 'is_active', 'next_date', 'start_date', 'end_date', 'occurrence_count']
+        fields = ['name', 'type', 'amount', 'frequency', 'category', 'source', 'is_active', 'next_date', 'start_date', 'end_date', 'occurrence_count', 'description', 'last_run_date', 'run_count', 'max_occurrences', 'skip_count', 'failure_count', 'last_status', 'notes', 'timezone', 'parent_transaction_id']
         set_clauses = []
         values = []
         for field in fields:
@@ -641,7 +655,7 @@ def update_recurring_transaction(recurring_id):
         if not set_clauses:
             return jsonify({'error': 'No fields to update', 'status': 'error'}), 400
         update_query = f"""
-            UPDATE recurring_transactions SET {', '.join(set_clauses)} WHERE id = %s RETURNING id, user_id, name, type, amount, frequency, category, source, is_active, next_date, start_date, end_date, occurrence_count, created_at, updated_at
+            UPDATE recurring_transactions SET {', '.join(set_clauses)} WHERE id = %s RETURNING id, user_id, name, type, amount, frequency, category, source, is_active, next_date, start_date, end_date, occurrence_count, description, last_run_date, run_count, max_occurrences, skip_count, failure_count, last_status, notes, timezone, parent_transaction_id, created_at, updated_at
         """
         cur.execute(update_query, values)
         updated = cur.fetchone()
@@ -649,7 +663,7 @@ def update_recurring_transaction(recurring_id):
         cur.close()
         conn.close()
         if updated:
-            columns = ['id', 'user_id', 'name', 'type', 'amount', 'frequency', 'category', 'source', 'is_active', 'next_date', 'start_date', 'end_date', 'occurrence_count', 'created_at', 'updated_at']
+            columns = ['id', 'user_id', 'name', 'type', 'amount', 'frequency', 'category', 'source', 'is_active', 'next_date', 'start_date', 'end_date', 'occurrence_count', 'description', 'last_run_date', 'run_count', 'max_occurrences', 'skip_count', 'failure_count', 'last_status', 'notes', 'timezone', 'parent_transaction_id', 'created_at', 'updated_at']
             return jsonify({'data': dict(zip(columns, updated)), 'status': 'success'})
         else:
             return jsonify({'error': 'Recurring transaction not found', 'status': 'error'}), 404
@@ -657,6 +671,7 @@ def update_recurring_transaction(recurring_id):
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/api/recurring-transactions/<recurring_id>', methods=['DELETE'])
+@jwt_required
 def delete_recurring_transaction(recurring_id):
     """Delete recurring transaction"""
     try:
