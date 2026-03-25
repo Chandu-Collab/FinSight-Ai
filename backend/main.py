@@ -18,12 +18,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from dotenv import load_dotenv
 import json
-
-
 load_dotenv()
-
 app = Flask(__name__)
 CORS(app)
+
+
 
 # ==================== SAVINGS GOALS ENDPOINTS (PostgreSQL) ====================
 @app.route('/api/savings-goals', methods=['GET'])
@@ -819,6 +818,7 @@ def create_transaction():
 
 # ==================== EXPENSES ENDPOINTS ====================
 @app.route('/api/expenses', methods=['POST'])
+@jwt_required
 def create_expense():
     """Create new expense record"""
     try:
@@ -828,9 +828,9 @@ def create_expense():
         cur = conn.cursor()
         insert_query = '''
             INSERT INTO expenses (
-                user_id, amount, category, description, date, created_at, updated_at
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
-            RETURNING id, user_id, amount, category, description, date, created_at, updated_at
+                user_id, amount, category, description, date, payment_method, merchant, receipt_url, recurring, tags, status, notes, created_at, updated_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, user_id, amount, category, description, date, payment_method, merchant, receipt_url, recurring, tags, status, notes, created_at, updated_at
         '''
         values = (
             data.get('user_id'),
@@ -838,6 +838,13 @@ def create_expense():
             data.get('category'),
             data.get('description'),
             data.get('date'),
+            data.get('payment_method'),
+            data.get('merchant'),
+            data.get('receipt_url'),
+            data.get('recurring', False),
+            data.get('tags'),
+            data.get('status'),
+            data.get('notes'),
             now,
             now
         )
@@ -846,13 +853,14 @@ def create_expense():
         conn.commit()
         cur.close()
         conn.close()
-        columns = ['id', 'user_id', 'amount', 'category', 'description', 'date', 'created_at', 'updated_at']
+        columns = ['id', 'user_id', 'amount', 'category', 'description', 'date', 'payment_method', 'merchant', 'receipt_url', 'recurring', 'tags', 'status', 'notes', 'created_at', 'updated_at']
         expense_dict = dict(zip(columns, new_expense))
         return jsonify({'data': expense_dict, 'status': 'success'})
     except Exception as e:
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/api/expenses', methods=['GET'])
+@jwt_required
 def get_expenses():
     """Get all expenses for a user"""
     user_id = request.args.get('user_id', 'demo-user-001')
@@ -860,11 +868,11 @@ def get_expenses():
         conn = get_db_conn()
         cur = conn.cursor()
         cur.execute('''
-            SELECT id, user_id, amount, category, description, date, created_at, updated_at
+            SELECT id, user_id, amount, category, description, date, payment_method, merchant, receipt_url, recurring, tags, status, notes, created_at, updated_at
             FROM expenses WHERE user_id = %s
         ''', (user_id,))
         rows = cur.fetchall()
-        columns = ['id', 'user_id', 'amount', 'category', 'description', 'date', 'created_at', 'updated_at']
+        columns = ['id', 'user_id', 'amount', 'category', 'description', 'date', 'payment_method', 'merchant', 'receipt_url', 'recurring', 'tags', 'status', 'notes', 'created_at', 'updated_at']
         user_expenses = [dict(zip(columns, row)) for row in rows]
         cur.close()
         conn.close()
@@ -872,7 +880,30 @@ def get_expenses():
     except Exception as e:
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
+@app.route('/api/expenses/<expense_id>', methods=['GET'])
+@jwt_required
+def get_expense(expense_id):
+    """Get a single expense by ID"""
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, user_id, amount, category, description, date, payment_method, merchant, receipt_url, recurring, tags, status, notes, created_at, updated_at
+            FROM expenses WHERE id = %s
+        ''', (expense_id,))
+        row = cur.fetchone()
+        columns = ['id', 'user_id', 'amount', 'category', 'description', 'date', 'payment_method', 'merchant', 'receipt_url', 'recurring', 'tags', 'status', 'notes', 'created_at', 'updated_at']
+        cur.close()
+        conn.close()
+        if row:
+            return jsonify({'data': dict(zip(columns, row)), 'status': 'success'})
+        else:
+            return jsonify({'error': 'Expense not found', 'status': 'error'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
 @app.route('/api/expenses/<expense_id>', methods=['PUT'])
+@jwt_required
 def update_expense(expense_id):
     """Update expense record"""
     try:
@@ -880,7 +911,7 @@ def update_expense(expense_id):
         now = datetime.datetime.now()
         conn = get_db_conn()
         cur = conn.cursor()
-        fields = ['amount', 'category', 'description', 'date']
+        fields = ['amount', 'category', 'description', 'date', 'payment_method', 'merchant', 'receipt_url', 'recurring', 'tags', 'status', 'notes']
         set_clauses = []
         values = []
         for field in fields:
@@ -893,7 +924,7 @@ def update_expense(expense_id):
         if not set_clauses:
             return jsonify({'error': 'No fields to update', 'status': 'error'}), 400
         update_query = f"""
-            UPDATE expenses SET {', '.join(set_clauses)} WHERE id = %s RETURNING id, user_id, amount, category, description, date, created_at, updated_at
+            UPDATE expenses SET {', '.join(set_clauses)} WHERE id = %s RETURNING id, user_id, amount, category, description, date, payment_method, merchant, receipt_url, recurring, tags, status, notes, created_at, updated_at
         """
         cur.execute(update_query, values)
         updated = cur.fetchone()
@@ -901,7 +932,41 @@ def update_expense(expense_id):
         cur.close()
         conn.close()
         if updated:
-            columns = ['id', 'user_id', 'amount', 'category', 'description', 'date', 'created_at', 'updated_at']
+            columns = ['id', 'user_id', 'amount', 'category', 'description', 'date', 'payment_method', 'merchant', 'receipt_url', 'recurring', 'tags', 'status', 'notes', 'created_at', 'updated_at']
+            return jsonify({'data': dict(zip(columns, updated)), 'status': 'success'})
+        else:
+            return jsonify({'error': 'Expense not found', 'status': 'error'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+def update_expense(expense_id):
+    """Update expense record"""
+    try:
+        data = request.get_json()
+        now = datetime.datetime.now()
+        conn = get_db_conn()
+        cur = conn.cursor()
+        fields = ['amount', 'category', 'description', 'date', 'payment_method', 'merchant', 'receipt_url', 'recurring', 'tags', 'status', 'notes']
+        set_clauses = []
+        values = []
+        for field in fields:
+            if field in data:
+                set_clauses.append(f"{field} = %s")
+                values.append(data[field])
+        set_clauses.append("updated_at = %s")
+        values.append(now)
+        values.append(expense_id)
+        if not set_clauses:
+            return jsonify({'error': 'No fields to update', 'status': 'error'}), 400
+        update_query = f"""
+            UPDATE expenses SET {', '.join(set_clauses)} WHERE id = %s RETURNING id, user_id, amount, category, description, date, payment_method, merchant, receipt_url, recurring, tags, status, notes, created_at, updated_at
+        """
+        cur.execute(update_query, values)
+        updated = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        if updated:
+            columns = ['id', 'user_id', 'amount', 'category', 'description', 'date', 'payment_method', 'merchant', 'receipt_url', 'recurring', 'tags', 'status', 'notes', 'created_at', 'updated_at']
             return jsonify({'data': dict(zip(columns, updated)), 'status': 'success'})
         else:
             return jsonify({'error': 'Expense not found', 'status': 'error'}), 404
@@ -909,6 +974,7 @@ def update_expense(expense_id):
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/api/expenses/<expense_id>', methods=['DELETE'])
+@jwt_required
 def delete_expense(expense_id):
     """Delete expense record"""
     try:
