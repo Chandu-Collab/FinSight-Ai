@@ -691,6 +691,7 @@ def delete_recurring_transaction(recurring_id):
 
 # ==================== NOTIFICATIONS ====================
 @app.route('/api/notifications', methods=['GET'])
+@jwt_required
 def get_notifications():
     """Get all notifications"""
     user_id = request.args.get('user_id', 'demo-user-001')
@@ -698,11 +699,11 @@ def get_notifications():
         conn = get_db_conn()
         cur = conn.cursor()
         cur.execute('''
-            SELECT id, user_id, title, message, type, is_read, is_acknowledged, created_at, updated_at
+            SELECT id, user_id, title, message, type, is_read, is_acknowledged, action_url, priority, expires_at, icon, channel, related_entity_id, scheduled_at, delivered_at, sender_id, group_id, created_at, updated_at
             FROM notifications WHERE user_id = %s
         ''', (user_id,))
         rows = cur.fetchall()
-        columns = ['id', 'user_id', 'title', 'message', 'type', 'is_read', 'is_acknowledged', 'created_at', 'updated_at']
+        columns = ['id', 'user_id', 'title', 'message', 'type', 'is_read', 'is_acknowledged', 'action_url', 'priority', 'expires_at', 'icon', 'channel', 'related_entity_id', 'scheduled_at', 'delivered_at', 'sender_id', 'group_id', 'created_at', 'updated_at']
         user_notifications = [dict(zip(columns, row)) for row in rows]
         cur.close()
         conn.close()
@@ -711,6 +712,7 @@ def get_notifications():
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/api/notifications', methods=['POST'])
+@jwt_required
 def create_notification():
     """Create new notification"""
     try:
@@ -718,19 +720,31 @@ def create_notification():
         conn = get_db_conn()
         cur = conn.cursor()
         cur.execute('''
-            INSERT INTO notifications (user_id, title, message, type, is_read, is_acknowledged)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            RETURNING id, user_id, title, message, type, is_read, is_acknowledged, created_at, updated_at
+            INSERT INTO notifications (
+                user_id, title, message, type, is_read, is_acknowledged, action_url, priority, expires_at, icon, channel, related_entity_id, scheduled_at, delivered_at, sender_id, group_id
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            ) RETURNING id, user_id, title, message, type, is_read, is_acknowledged, action_url, priority, expires_at, icon, channel, related_entity_id, scheduled_at, delivered_at, sender_id, group_id, created_at, updated_at
         ''', (
             data.get('user_id', 'demo-user-001'),
             data['title'],
             data['message'],
             data.get('type', 'info'),
             data.get('is_read', False),
-            data.get('is_acknowledged', False)
+            data.get('is_acknowledged', False),
+            data.get('action_url'),
+            data.get('priority'),
+            data.get('expires_at'),
+            data.get('icon'),
+            data.get('channel'),
+            data.get('related_entity_id'),
+            data.get('scheduled_at'),
+            data.get('delivered_at'),
+            data.get('sender_id'),
+            data.get('group_id')
         ))
         row = cur.fetchone()
-        columns = ['id', 'user_id', 'title', 'message', 'type', 'is_read', 'is_acknowledged', 'created_at', 'updated_at']
+        columns = ['id', 'user_id', 'title', 'message', 'type', 'is_read', 'is_acknowledged', 'action_url', 'priority', 'expires_at', 'icon', 'channel', 'related_entity_id', 'scheduled_at', 'delivered_at', 'sender_id', 'group_id', 'created_at', 'updated_at']
         new_notification = dict(zip(columns, row))
         conn.commit()
         cur.close()
@@ -740,20 +754,21 @@ def create_notification():
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/api/notifications/<notification_id>', methods=['GET'])
+@jwt_required
 def get_notification_by_id(notification_id):
     """Get notification by ID"""
     try:
         conn = get_db_conn()
         cur = conn.cursor()
         cur.execute('''
-            SELECT id, user_id, title, message, type, is_read, is_acknowledged, created_at, updated_at
+            SELECT id, user_id, title, message, type, is_read, is_acknowledged, action_url, priority, expires_at, icon, channel, related_entity_id, scheduled_at, delivered_at, sender_id, group_id, created_at, updated_at
             FROM notifications WHERE id = %s
         ''', (notification_id,))
         row = cur.fetchone()
         cur.close()
         conn.close()
         if row:
-            columns = ['id', 'user_id', 'title', 'message', 'type', 'is_read', 'is_acknowledged', 'created_at', 'updated_at']
+            columns = ['id', 'user_id', 'title', 'message', 'type', 'is_read', 'is_acknowledged', 'action_url', 'priority', 'expires_at', 'icon', 'channel', 'related_entity_id', 'scheduled_at', 'delivered_at', 'sender_id', 'group_id', 'created_at', 'updated_at']
             notification = dict(zip(columns, row))
             return jsonify({'data': notification, 'status': 'success'})
         return jsonify({'error': 'notification not found', 'status': 'error'}), 404
@@ -761,6 +776,7 @@ def get_notification_by_id(notification_id):
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/api/notifications/<notification_id>', methods=['PUT'])
+@jwt_required
 def update_notification(notification_id):
     """Update notification (mark as read/unread)"""
     try:
@@ -774,15 +790,35 @@ def update_notification(notification_id):
                 type = COALESCE(%s, type),
                 is_read = COALESCE(%s, is_read),
                 is_acknowledged = COALESCE(%s, is_acknowledged),
+                action_url = COALESCE(%s, action_url),
+                priority = COALESCE(%s, priority),
+                expires_at = COALESCE(%s, expires_at),
+                icon = COALESCE(%s, icon),
+                channel = COALESCE(%s, channel),
+                related_entity_id = COALESCE(%s, related_entity_id),
+                scheduled_at = COALESCE(%s, scheduled_at),
+                delivered_at = COALESCE(%s, delivered_at),
+                sender_id = COALESCE(%s, sender_id),
+                group_id = COALESCE(%s, group_id),
                 updated_at = NOW()
             WHERE id = %s
-            RETURNING id, user_id, title, message, type, is_read, is_acknowledged, created_at, updated_at
+            RETURNING id, user_id, title, message, type, is_read, is_acknowledged, action_url, priority, expires_at, icon, channel, related_entity_id, scheduled_at, delivered_at, sender_id, group_id, created_at, updated_at
         ''', (
             data.get('title'),
             data.get('message'),
             data.get('type'),
             data.get('is_read'),
             data.get('is_acknowledged'),
+            data.get('action_url'),
+            data.get('priority'),
+            data.get('expires_at'),
+            data.get('icon'),
+            data.get('channel'),
+            data.get('related_entity_id'),
+            data.get('scheduled_at'),
+            data.get('delivered_at'),
+            data.get('sender_id'),
+            data.get('group_id'),
             notification_id
         ))
         row = cur.fetchone()
@@ -790,7 +826,7 @@ def update_notification(notification_id):
         cur.close()
         conn.close()
         if row:
-            columns = ['id', 'user_id', 'title', 'message', 'type', 'is_read', 'is_acknowledged', 'created_at', 'updated_at']
+            columns = ['id', 'user_id', 'title', 'message', 'type', 'is_read', 'is_acknowledged', 'action_url', 'priority', 'expires_at', 'icon', 'channel', 'related_entity_id', 'scheduled_at', 'delivered_at', 'sender_id', 'group_id', 'created_at', 'updated_at']
             notification = dict(zip(columns, row))
             return jsonify({'data': notification, 'status': 'success'})
         return jsonify({'error': 'notification not found', 'status': 'error'}), 404
@@ -798,7 +834,48 @@ def update_notification(notification_id):
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/api/notifications/<notification_id>', methods=['DELETE'])
+@jwt_required
 def delete_notification(notification_id):
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('DELETE FROM notifications WHERE id = %s RETURNING id', (notification_id,))
+        deleted = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        if deleted:
+            return jsonify({'status': 'success'})
+        else:
+            return jsonify({'error': 'Notification not found', 'status': 'error'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+# PATCH endpoint to mark notification as seen
+@app.route('/api/notifications/<notification_id>/seen', methods=['PATCH'])
+@jwt_required
+def mark_notification_seen(notification_id):
+    """Mark notification as seen (is_read=true)"""
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            UPDATE notifications
+            SET is_read = TRUE, updated_at = NOW()
+            WHERE id = %s
+            RETURNING id, user_id, title, message, type, is_read, is_acknowledged, action_url, priority, expires_at, icon, channel, related_entity_id, scheduled_at, delivered_at, sender_id, group_id, created_at, updated_at
+        ''', (notification_id,))
+        row = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        if row:
+            columns = ['id', 'user_id', 'title', 'message', 'type', 'is_read', 'is_acknowledged', 'action_url', 'priority', 'expires_at', 'icon', 'channel', 'related_entity_id', 'scheduled_at', 'delivered_at', 'sender_id', 'group_id', 'created_at', 'updated_at']
+            notification = dict(zip(columns, row))
+            return jsonify({'data': notification, 'status': 'success'})
+        return jsonify({'error': 'notification not found', 'status': 'error'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
     """Delete notification"""
     try:
         conn = get_db_conn()

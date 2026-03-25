@@ -160,6 +160,16 @@ CREATE TABLE IF NOT EXISTS notifications (
     type VARCHAR(50),
     is_read BOOLEAN DEFAULT FALSE,
     is_acknowledged BOOLEAN DEFAULT FALSE,
+    action_url TEXT,
+    priority VARCHAR(20),
+    expires_at TIMESTAMP,
+    icon TEXT,
+    channel VARCHAR(50),
+    related_entity_id UUID,
+    scheduled_at TIMESTAMP,
+    delivered_at TIMESTAMP,
+    sender_id UUID,
+    group_id UUID,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
