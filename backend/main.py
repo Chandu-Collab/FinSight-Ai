@@ -19,6 +19,279 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from dotenv import load_dotenv
 import json
 
+
+load_dotenv()
+
+app = Flask(__name__)
+CORS(app)
+
+# ==================== SAVINGS GOALS ENDPOINTS (PostgreSQL) ====================
+@app.route('/api/savings-goals', methods=['GET'])
+def get_savings_goals():
+    """Get all savings goals for a user"""
+    user_id = request.args.get('user_id', 'demo-user-001')
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, user_id, name, category, target_amount, current_amount, target_date, description, created_at, updated_at
+            FROM savings_goals WHERE user_id = %s
+        ''', (user_id,))
+        rows = cur.fetchall()
+        columns = ['id', 'user_id', 'name', 'category', 'target_amount', 'current_amount', 'target_date', 'description', 'created_at', 'updated_at']
+        user_goals = [dict(zip(columns, row)) for row in rows]
+        cur.close()
+        conn.close()
+        return jsonify({'data': user_goals, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/savings-goals', methods=['POST'])
+def create_savings_goal():
+    """Create new savings goal"""
+    try:
+        data = request.get_json()
+        now = datetime.datetime.now()
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            INSERT INTO savings_goals (user_id, name, category, target_amount, current_amount, target_date, description, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, user_id, name, category, target_amount, current_amount, target_date, description, created_at, updated_at
+        ''', (
+            data.get('user_id', 'demo-user-001'),
+            data['name'],
+            data['category'],
+            float(data['target_amount']),
+            float(data.get('current_amount', 0)),
+            data['target_date'],
+            data.get('description', ''),
+            now,
+            now
+        ))
+        row = cur.fetchone()
+        columns = ['id', 'user_id', 'name', 'category', 'target_amount', 'current_amount', 'target_date', 'description', 'created_at', 'updated_at']
+        new_goal = dict(zip(columns, row))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({'data': new_goal, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/savings-goals/<goal_id>', methods=['GET'])
+def get_savings_goal_by_id(goal_id):
+    """Get savings goal by ID"""
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, user_id, name, category, target_amount, current_amount, target_date, description, created_at, updated_at
+            FROM savings_goals WHERE id = %s
+        ''', (goal_id,))
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if row:
+            columns = ['id', 'user_id', 'name', 'category', 'target_amount', 'current_amount', 'target_date', 'description', 'created_at', 'updated_at']
+            goal = dict(zip(columns, row))
+            return jsonify({'data': goal, 'status': 'success'})
+        return jsonify({'error': 'Savings goal not found', 'status': 'error'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/savings-goals/<goal_id>', methods=['PUT'])
+def update_savings_goal(goal_id):
+    """Update savings goal"""
+    try:
+        data = request.get_json()
+        now = datetime.datetime.now()
+        conn = get_db_conn()
+        cur = conn.cursor()
+        fields = ['name', 'category', 'target_amount', 'current_amount', 'target_date', 'description']
+        set_clauses = []
+        values = []
+        for field in fields:
+            if field in data:
+                set_clauses.append(f"{field} = %s")
+                values.append(data[field])
+        set_clauses.append("updated_at = %s")
+        values.append(now)
+        values.append(goal_id)
+        if not set_clauses:
+            return jsonify({'error': 'No fields to update', 'status': 'error'}), 400
+        update_query = f"""
+            UPDATE savings_goals SET {', '.join(set_clauses)} WHERE id = %s RETURNING id, user_id, name, category, target_amount, current_amount, target_date, description, created_at, updated_at
+        """
+        cur.execute(update_query, values)
+        updated = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        if updated:
+            columns = ['id', 'user_id', 'name', 'category', 'target_amount', 'current_amount', 'target_date', 'description', 'created_at', 'updated_at']
+            return jsonify({'data': dict(zip(columns, updated)), 'status': 'success'})
+        else:
+            return jsonify({'error': 'Savings goal not found', 'status': 'error'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/savings-goals/<goal_id>', methods=['DELETE'])
+def delete_savings_goal(goal_id):
+    """Delete savings goal"""
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('DELETE FROM savings_goals WHERE id = %s RETURNING id', (goal_id,))
+        deleted = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        if deleted:
+            return jsonify({'status': 'success'})
+        else:
+            return jsonify({'error': 'Savings goal not found', 'status': 'error'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+# ==================== BUDGETS ENDPOINTS ====================
+@app.route('/api/budgets', methods=['GET'])
+def get_budgets():
+    """Get all budgets for a user (optionally filter by month)"""
+    user_id = request.args.get('user_id', 'demo-user-001')
+    month = request.args.get('month')
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        if month:
+            cur.execute('''
+                SELECT id, user_id, name, category, amount, month, alert_threshold, created_at, updated_at
+                FROM budgets WHERE user_id = %s AND month = %s
+            ''', (user_id, month))
+        else:
+            cur.execute('''
+                SELECT id, user_id, name, category, amount, month, alert_threshold, created_at, updated_at
+                FROM budgets WHERE user_id = %s
+            ''', (user_id,))
+        rows = cur.fetchall()
+        columns = ['id', 'user_id', 'name', 'category', 'amount', 'month', 'alert_threshold', 'created_at', 'updated_at']
+        user_budgets = [dict(zip(columns, row)) for row in rows]
+        cur.close()
+        conn.close()
+        return jsonify({'data': user_budgets, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/budgets', methods=['POST'])
+def create_budget():
+    """Create new budget"""
+    try:
+        data = request.get_json()
+        now = datetime.datetime.now()
+        conn = get_db_conn()
+        cur = conn.cursor()
+        insert_query = '''
+            INSERT INTO budgets (
+                user_id, name, category, amount, month, alert_threshold, created_at, updated_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, user_id, name, category, amount, month, alert_threshold, created_at, updated_at
+        '''
+        values = (
+            data.get('user_id'),
+            data.get('name'),
+            data.get('category'),
+            float(data['amount']),
+            data.get('month'),
+            float(data.get('alert_threshold', 80)),
+            now,
+            now
+        )
+        cur.execute(insert_query, values)
+        new_budget = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        columns = ['id', 'user_id', 'name', 'category', 'amount', 'month', 'alert_threshold', 'created_at', 'updated_at']
+        budget_dict = dict(zip(columns, new_budget))
+        return jsonify({'data': budget_dict, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/budgets/<budget_id>', methods=['GET'])
+def get_budget_by_id(budget_id):
+    """Get budget by ID"""
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, user_id, name, category, amount, month, alert_threshold, created_at, updated_at
+            FROM budgets WHERE id = %s
+        ''', (budget_id,))
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if row:
+            columns = ['id', 'user_id', 'name', 'category', 'amount', 'month', 'alert_threshold', 'created_at', 'updated_at']
+            return jsonify({'data': dict(zip(columns, row)), 'status': 'success'})
+        else:
+            return jsonify({'error': 'Budget not found', 'status': 'error'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/budgets/<budget_id>', methods=['PUT'])
+def update_budget(budget_id):
+    """Update budget"""
+    try:
+        data = request.get_json()
+        now = datetime.datetime.now()
+        conn = get_db_conn()
+        cur = conn.cursor()
+        fields = ['name', 'category', 'amount', 'month', 'alert_threshold']
+        set_clauses = []
+        values = []
+        for field in fields:
+            if field in data:
+                set_clauses.append(f"{field} = %s")
+                values.append(data[field])
+        set_clauses.append("updated_at = %s")
+        values.append(now)
+        values.append(budget_id)
+        if not set_clauses:
+            return jsonify({'error': 'No fields to update', 'status': 'error'}), 400
+        update_query = f"""
+            UPDATE budgets SET {', '.join(set_clauses)} WHERE id = %s RETURNING id, user_id, name, category, amount, month, alert_threshold, created_at, updated_at
+        """
+        cur.execute(update_query, values)
+        updated = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        if updated:
+            columns = ['id', 'user_id', 'name', 'category', 'amount', 'month', 'alert_threshold', 'created_at', 'updated_at']
+            return jsonify({'data': dict(zip(columns, updated)), 'status': 'success'})
+        else:
+            return jsonify({'error': 'Budget not found', 'status': 'error'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/budgets/<budget_id>', methods=['DELETE'])
+def delete_budget(budget_id):
+    """Delete budget"""
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('DELETE FROM budgets WHERE id = %s RETURNING id', (budget_id,))
+        deleted = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        if deleted:
+            return jsonify({'status': 'success'})
+        else:
+            return jsonify({'error': 'Budget not found', 'status': 'error'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -228,18 +501,123 @@ def protected():
     return jsonify({'message': f'Hello, user {g.user_id} with email {g.email}! This is a protected endpoint.'})
 
 
-# ==================== RECURRING TRANSACTIONS ====================
+
+# ==================== RECURRING TRANSACTIONS ENDPOINTS (PostgreSQL) ====================
+@app.route('/api/recurring-transactions', methods=['GET'])
+def get_recurring_transactions():
+    """Get all recurring transactions for a user"""
+    user_id = request.args.get('user_id', 'demo-user-001')
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, user_id, name, type, amount, frequency, category, source, is_active, next_date, start_date, end_date, occurrence_count, created_at, updated_at
+            FROM recurring_transactions WHERE user_id = %s
+        ''', (user_id,))
+        rows = cur.fetchall()
+        columns = ['id', 'user_id', 'name', 'type', 'amount', 'frequency', 'category', 'source', 'is_active', 'next_date', 'start_date', 'end_date', 'occurrence_count', 'created_at', 'updated_at']
+        user_recurring = [dict(zip(columns, row)) for row in rows]
+        cur.close()
+        conn.close()
+        return jsonify({'data': user_recurring, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/recurring-transactions', methods=['POST'])
+def create_recurring_transaction():
+    """Create new recurring transaction"""
+    try:
+        data = request.get_json()
+        now = datetime.datetime.now()
+        conn = get_db_conn()
+        cur = conn.cursor()
+        insert_query = '''
+            INSERT INTO recurring_transactions (
+                user_id, name, type, amount, frequency, category, source, is_active, next_date, start_date, end_date, occurrence_count, created_at, updated_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, user_id, name, type, amount, frequency, category, source, is_active, next_date, start_date, end_date, occurrence_count, created_at, updated_at
+        '''
+        values = (
+            data.get('user_id'),
+            data.get('name'),
+            data.get('type'),
+            float(data['amount']),
+            data.get('frequency'),
+            data.get('category'),
+            data.get('source'),
+            data.get('is_active', True),
+            data.get('next_date'),
+            data.get('start_date'),
+            data.get('end_date'),
+            data.get('occurrence_count'),
+            now,
+            now
+        )
+        cur.execute(insert_query, values)
+        new_rec = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        columns = ['id', 'user_id', 'name', 'type', 'amount', 'frequency', 'category', 'source', 'is_active', 'next_date', 'start_date', 'end_date', 'occurrence_count', 'created_at', 'updated_at']
+        rec_dict = dict(zip(columns, new_rec))
+        return jsonify({'data': rec_dict, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/recurring-transactions/<recurring_id>', methods=['GET'])
+def get_recurring_transaction_by_id(recurring_id):
+    """Get recurring transaction by ID"""
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, user_id, name, type, amount, frequency, category, source, is_active, next_date, start_date, end_date, occurrence_count, created_at, updated_at
+            FROM recurring_transactions WHERE id = %s
+        ''', (recurring_id,))
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if row:
+            columns = ['id', 'user_id', 'name', 'type', 'amount', 'frequency', 'category', 'source', 'is_active', 'next_date', 'start_date', 'end_date', 'occurrence_count', 'created_at', 'updated_at']
+            return jsonify({'data': dict(zip(columns, row)), 'status': 'success'})
+        else:
+            return jsonify({'error': 'Recurring transaction not found', 'status': 'error'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
 @app.route('/api/recurring-transactions/<recurring_id>', methods=['PUT'])
 def update_recurring_transaction(recurring_id):
     """Update recurring transaction"""
     try:
         data = request.get_json()
-        for i, rec in enumerate(DATA_STORAGE['recurring_transactions']):
-            if rec['id'] == recurring_id:
-                DATA_STORAGE['recurring_transactions'][i].update(data)
-                DATA_STORAGE['recurring_transactions'][i]['updated_at'] = datetime.datetime.now().isoformat()
-                return jsonify({'data': DATA_STORAGE['recurring_transactions'][i], 'status': 'success'})
-        return jsonify({'error': 'Recurring transaction not found', 'status': 'error'}), 404
+        now = datetime.datetime.now()
+        conn = get_db_conn()
+        cur = conn.cursor()
+        fields = ['name', 'type', 'amount', 'frequency', 'category', 'source', 'is_active', 'next_date', 'start_date', 'end_date', 'occurrence_count']
+        set_clauses = []
+        values = []
+        for field in fields:
+            if field in data:
+                set_clauses.append(f"{field} = %s")
+                values.append(data[field])
+        set_clauses.append("updated_at = %s")
+        values.append(now)
+        values.append(recurring_id)
+        if not set_clauses:
+            return jsonify({'error': 'No fields to update', 'status': 'error'}), 400
+        update_query = f"""
+            UPDATE recurring_transactions SET {', '.join(set_clauses)} WHERE id = %s RETURNING id, user_id, name, type, amount, frequency, category, source, is_active, next_date, start_date, end_date, occurrence_count, created_at, updated_at
+        """
+        cur.execute(update_query, values)
+        updated = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        if updated:
+            columns = ['id', 'user_id', 'name', 'type', 'amount', 'frequency', 'category', 'source', 'is_active', 'next_date', 'start_date', 'end_date', 'occurrence_count', 'created_at', 'updated_at']
+            return jsonify({'data': dict(zip(columns, updated)), 'status': 'success'})
+        else:
+            return jsonify({'error': 'Recurring transaction not found', 'status': 'error'}), 404
     except Exception as e:
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
@@ -247,8 +625,17 @@ def update_recurring_transaction(recurring_id):
 def delete_recurring_transaction(recurring_id):
     """Delete recurring transaction"""
     try:
-        DATA_STORAGE['recurring_transactions'] = [rec for rec in DATA_STORAGE['recurring_transactions'] if rec['id'] != recurring_id]
-        return jsonify({'status': 'success'})
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('DELETE FROM recurring_transactions WHERE id = %s RETURNING id', (recurring_id,))
+        deleted = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        if deleted:
+            return jsonify({'status': 'success'})
+        else:
+            return jsonify({'error': 'Recurring transaction not found', 'status': 'error'}), 404
     except Exception as e:
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
@@ -257,26 +644,47 @@ def delete_recurring_transaction(recurring_id):
 def get_notifications():
     """Get all notifications"""
     user_id = request.args.get('user_id', 'demo-user-001')
-    user_notifications = [notif for notif in DATA_STORAGE['notifications'] if notif['user_id'] == user_id]
-    return jsonify({'data': user_notifications, 'status': 'success'})
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, user_id, title, message, type, is_read, is_acknowledged, created_at, updated_at
+            FROM notifications WHERE user_id = %s
+        ''', (user_id,))
+        rows = cur.fetchall()
+        columns = ['id', 'user_id', 'title', 'message', 'type', 'is_read', 'is_acknowledged', 'created_at', 'updated_at']
+        user_notifications = [dict(zip(columns, row)) for row in rows]
+        cur.close()
+        conn.close()
+        return jsonify({'data': user_notifications, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/api/notifications', methods=['POST'])
 def create_notification():
     """Create new notification"""
     try:
         data = request.get_json()
-        new_notification = {
-            'id': f"not-{len(DATA_STORAGE['notifications']) + 1:03d}",
-            'user_id': data.get('user_id', 'demo-user-001'),
-            'title': data['title'],
-            'message': data['message'],
-            'type': data.get('type', 'info'),
-            'is_read': data.get('is_read', False),
-            'is_acknowledged': data.get('is_acknowledged', False),
-            'created_at': datetime.datetime.now().isoformat(),
-            'updated_at': datetime.datetime.now().isoformat()
-        }
-        DATA_STORAGE['notifications'].append(new_notification)
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            INSERT INTO notifications (user_id, title, message, type, is_read, is_acknowledged)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id, user_id, title, message, type, is_read, is_acknowledged, created_at, updated_at
+        ''', (
+            data.get('user_id', 'demo-user-001'),
+            data['title'],
+            data['message'],
+            data.get('type', 'info'),
+            data.get('is_read', False),
+            data.get('is_acknowledged', False)
+        ))
+        row = cur.fetchone()
+        columns = ['id', 'user_id', 'title', 'message', 'type', 'is_read', 'is_acknowledged', 'created_at', 'updated_at']
+        new_notification = dict(zip(columns, row))
+        conn.commit()
+        cur.close()
+        conn.close()
         return jsonify({'data': new_notification, 'status': 'success'})
     except Exception as e:
         return jsonify({'error': str(e), 'status': 'error'}), 500
@@ -284,21 +692,57 @@ def create_notification():
 @app.route('/api/notifications/<notification_id>', methods=['GET'])
 def get_notification_by_id(notification_id):
     """Get notification by ID"""
-    notification = next((notif for notif in DATA_STORAGE['notifications'] if notif['id'] == notification_id), None)
-    if notification:
-        return jsonify({'data': notification, 'status': 'success'})
-    return jsonify({'error': 'notification not found', 'status': 'error'}), 404
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, user_id, title, message, type, is_read, is_acknowledged, created_at, updated_at
+            FROM notifications WHERE id = %s
+        ''', (notification_id,))
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if row:
+            columns = ['id', 'user_id', 'title', 'message', 'type', 'is_read', 'is_acknowledged', 'created_at', 'updated_at']
+            notification = dict(zip(columns, row))
+            return jsonify({'data': notification, 'status': 'success'})
+        return jsonify({'error': 'notification not found', 'status': 'error'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/api/notifications/<notification_id>', methods=['PUT'])
 def update_notification(notification_id):
     """Update notification (mark as read/unread)"""
     try:
         data = request.get_json()
-        for i, notif in enumerate(DATA_STORAGE['notifications']):
-            if notif['id'] == notification_id:
-                DATA_STORAGE['notifications'][i].update(data)
-                DATA_STORAGE['notifications'][i]['updated_at'] = datetime.datetime.now().isoformat()
-                return jsonify({'data': DATA_STORAGE['notifications'][i], 'status': 'success'})
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            UPDATE notifications
+            SET title = COALESCE(%s, title),
+                message = COALESCE(%s, message),
+                type = COALESCE(%s, type),
+                is_read = COALESCE(%s, is_read),
+                is_acknowledged = COALESCE(%s, is_acknowledged),
+                updated_at = NOW()
+            WHERE id = %s
+            RETURNING id, user_id, title, message, type, is_read, is_acknowledged, created_at, updated_at
+        ''', (
+            data.get('title'),
+            data.get('message'),
+            data.get('type'),
+            data.get('is_read'),
+            data.get('is_acknowledged'),
+            notification_id
+        ))
+        row = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        if row:
+            columns = ['id', 'user_id', 'title', 'message', 'type', 'is_read', 'is_acknowledged', 'created_at', 'updated_at']
+            notification = dict(zip(columns, row))
+            return jsonify({'data': notification, 'status': 'success'})
         return jsonify({'error': 'notification not found', 'status': 'error'}), 404
     except Exception as e:
         return jsonify({'error': str(e), 'status': 'error'}), 500
@@ -307,8 +751,17 @@ def update_notification(notification_id):
 def delete_notification(notification_id):
     """Delete notification"""
     try:
-        DATA_STORAGE['notifications'] = [notif for notif in DATA_STORAGE['notifications'] if notif['id'] != notification_id]
-        return jsonify({'status': 'success'})
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('DELETE FROM notifications WHERE id = %s RETURNING id', (notification_id,))
+        deleted = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        if deleted:
+            return jsonify({'status': 'success'})
+        else:
+            return jsonify({'error': 'Notification not found', 'status': 'error'}), 404
     except Exception as e:
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
@@ -317,16 +770,37 @@ def delete_notification(notification_id):
 def get_transactions():
     """Get all transactions (income + expenses)"""
     user_id = request.args.get('user_id', 'demo-user-001')
-    user_income = [inc for inc in DATA_STORAGE['income'] if inc['user_id'] == user_id]
-    user_expenses = [exp for exp in DATA_STORAGE['expenses'] if exp['user_id'] == user_id]
-    # Combine and sort by date
-    all_transactions = []
-    for inc in user_income:
-        all_transactions.append({**inc, 'type': 'income'})
-    for exp in user_expenses:
-        all_transactions.append({**exp, 'type': 'expense'})
-    all_transactions.sort(key=lambda x: x['date'], reverse=True)
-    return jsonify({'data': all_transactions, 'status': 'success'})
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        # Fetch income
+        cur.execute('''
+            SELECT id, user_id, amount, source, description, frequency, date, currency, status, category, recurring_id, tax_deducted, attachment_url, created_at, updated_at
+            FROM income WHERE user_id = %s
+        ''', (user_id,))
+        income_rows = cur.fetchall()
+        income_columns = ['id', 'user_id', 'amount', 'source', 'description', 'frequency', 'date', 'currency', 'status', 'category', 'recurring_id', 'tax_deducted', 'attachment_url', 'created_at', 'updated_at']
+        user_income = [dict(zip(income_columns, row)) for row in income_rows]
+        # Fetch expenses from DB
+        cur.execute('''
+            SELECT id, user_id, amount, category, description, date, created_at, updated_at
+            FROM expenses WHERE user_id = %s
+        ''', (user_id,))
+        expense_rows = cur.fetchall()
+        expense_columns = ['id', 'user_id', 'amount', 'category', 'description', 'date', 'created_at', 'updated_at']
+        user_expenses = [dict(zip(expense_columns, row)) for row in expense_rows]
+        # Combine and sort by date
+        all_transactions = []
+        for inc in user_income:
+            all_transactions.append({**inc, 'type': 'income'})
+        for exp in user_expenses:
+            all_transactions.append({**exp, 'type': 'expense'})
+        all_transactions.sort(key=lambda x: x['date'], reverse=True)
+        cur.close()
+        conn.close()
+        return jsonify({'data': all_transactions, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/api/transactions', methods=['POST'])
 def create_transaction():
@@ -343,13 +817,283 @@ def create_transaction():
     except Exception as e:
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
+# ==================== EXPENSES ENDPOINTS ====================
+@app.route('/api/expenses', methods=['POST'])
+def create_expense():
+    """Create new expense record"""
+    try:
+        data = request.get_json()
+        now = datetime.datetime.now()
+        conn = get_db_conn()
+        cur = conn.cursor()
+        insert_query = '''
+            INSERT INTO expenses (
+                user_id, amount, category, description, date, created_at, updated_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, user_id, amount, category, description, date, created_at, updated_at
+        '''
+        values = (
+            data.get('user_id'),
+            float(data['amount']),
+            data.get('category'),
+            data.get('description'),
+            data.get('date'),
+            now,
+            now
+        )
+        cur.execute(insert_query, values)
+        new_expense = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        columns = ['id', 'user_id', 'amount', 'category', 'description', 'date', 'created_at', 'updated_at']
+        expense_dict = dict(zip(columns, new_expense))
+        return jsonify({'data': expense_dict, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/expenses', methods=['GET'])
+def get_expenses():
+    """Get all expenses for a user"""
+    user_id = request.args.get('user_id', 'demo-user-001')
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, user_id, amount, category, description, date, created_at, updated_at
+            FROM expenses WHERE user_id = %s
+        ''', (user_id,))
+        rows = cur.fetchall()
+        columns = ['id', 'user_id', 'amount', 'category', 'description', 'date', 'created_at', 'updated_at']
+        user_expenses = [dict(zip(columns, row)) for row in rows]
+        cur.close()
+        conn.close()
+        return jsonify({'data': user_expenses, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/expenses/<expense_id>', methods=['PUT'])
+def update_expense(expense_id):
+    """Update expense record"""
+    try:
+        data = request.get_json()
+        now = datetime.datetime.now()
+        conn = get_db_conn()
+        cur = conn.cursor()
+        fields = ['amount', 'category', 'description', 'date']
+        set_clauses = []
+        values = []
+        for field in fields:
+            if field in data:
+                set_clauses.append(f"{field} = %s")
+                values.append(data[field])
+        set_clauses.append("updated_at = %s")
+        values.append(now)
+        values.append(expense_id)
+        if not set_clauses:
+            return jsonify({'error': 'No fields to update', 'status': 'error'}), 400
+        update_query = f"""
+            UPDATE expenses SET {', '.join(set_clauses)} WHERE id = %s RETURNING id, user_id, amount, category, description, date, created_at, updated_at
+        """
+        cur.execute(update_query, values)
+        updated = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        if updated:
+            columns = ['id', 'user_id', 'amount', 'category', 'description', 'date', 'created_at', 'updated_at']
+            return jsonify({'data': dict(zip(columns, updated)), 'status': 'success'})
+        else:
+            return jsonify({'error': 'Expense not found', 'status': 'error'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/expenses/<expense_id>', methods=['DELETE'])
+def delete_expense(expense_id):
+    """Delete expense record"""
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('DELETE FROM expenses WHERE id = %s RETURNING id', (expense_id,))
+        deleted = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        if deleted:
+            return jsonify({'status': 'success'})
+        else:
+            return jsonify({'error': 'Expense not found', 'status': 'error'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+# ==================== INCOME ENDPOINTS ====================
+@app.route('/api/income', methods=['POST'])
+@jwt_required
+def create_income():
+    """Create new income record"""
+    try:
+        data = request.get_json()
+        now = datetime.datetime.now()
+        conn = get_db_conn()
+        cur = conn.cursor()
+        insert_query = '''
+            INSERT INTO income (
+                user_id, amount, source, description, frequency, date, currency, status, category, recurring_id, tax_deducted, attachment_url, created_at, updated_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, user_id, amount, source, description, frequency, date, currency, status, category, recurring_id, tax_deducted, attachment_url, created_at, updated_at
+        '''
+        values = (
+            data.get('user_id'),
+            float(data['amount']),
+            data.get('source'),
+            data.get('description'),
+            data.get('frequency'),
+            data.get('date'),
+            data.get('currency', 'USD'),
+            data.get('status', 'confirmed'),
+            data.get('category'),
+            data.get('recurring_id'),
+            float(data['tax_deducted']) if data.get('tax_deducted') is not None else None,
+            data.get('attachment_url'),
+            now,
+            now
+        )
+        cur.execute(insert_query, values)
+        new_income = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        # Convert result to dict with column names
+        columns = ['id', 'user_id', 'amount', 'source', 'description', 'frequency', 'date', 'currency', 'status', 'category', 'recurring_id', 'tax_deducted', 'attachment_url', 'created_at', 'updated_at']
+        income_dict = dict(zip(columns, new_income))
+        return jsonify({'data': income_dict, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/income', methods=['GET'])
+@jwt_required
+def get_income():
+    """Get all income records"""
+    user_id = request.args.get('user_id', 'demo-user-001')
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, user_id, amount, source, description, frequency, date, currency, status, category, recurring_id, tax_deducted, attachment_url, created_at, updated_at
+            FROM income WHERE user_id = %s
+        ''', (user_id,))
+        rows = cur.fetchall()
+        columns = ['id', 'user_id', 'amount', 'source', 'description', 'frequency', 'date', 'currency', 'status', 'category', 'recurring_id', 'tax_deducted', 'attachment_url', 'created_at', 'updated_at']
+        user_income = [dict(zip(columns, row)) for row in rows]
+        cur.close()
+        conn.close()
+
+        return jsonify({'data': user_income, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+# Get a single income record by ID
+@app.route('/api/income/<income_id>', methods=['GET'])
+@jwt_required
+def get_income_by_id(income_id):
+    """Get a single income record by ID"""
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, user_id, amount, source, description, frequency, date, currency, status, category, recurring_id, tax_deducted, attachment_url, created_at, updated_at
+            FROM income WHERE id = %s
+        ''', (income_id,))
+        row = cur.fetchone()
+        columns = ['id', 'user_id', 'amount', 'source', 'description', 'frequency', 'date', 'currency', 'status', 'category', 'recurring_id', 'tax_deducted', 'attachment_url', 'created_at', 'updated_at']
+        cur.close()
+        conn.close()
+        if row:
+            return jsonify({'data': dict(zip(columns, row)), 'status': 'success'})
+        else:
+            return jsonify({'error': 'Income not found', 'status': 'error'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/income/<income_id>', methods=['PUT'])
+@jwt_required
+def update_income(income_id):
+    """Update income record"""
+    try:
+        data = request.get_json()
+        now = datetime.datetime.now()
+        conn = get_db_conn()
+        cur = conn.cursor()
+        # Build dynamic SET clause
+        fields = ['amount', 'source', 'description', 'frequency', 'date', 'currency', 'status', 'category', 'recurring_id', 'tax_deducted', 'attachment_url']
+        set_clauses = []
+        values = []
+        for field in fields:
+            if field in data:
+                set_clauses.append(f"{field} = %s")
+                values.append(data[field])
+        set_clauses.append("updated_at = %s")
+        values.append(now)
+        values.append(income_id)
+        if not set_clauses:
+            return jsonify({'error': 'No fields to update', 'status': 'error'}), 400
+        update_query = f"""
+            UPDATE income SET {', '.join(set_clauses)} WHERE id = %s RETURNING id, user_id, amount, source, description, frequency, date, currency, status, category, recurring_id, tax_deducted, attachment_url, created_at, updated_at
+        """
+        cur.execute(update_query, values)
+        updated = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        if updated:
+            columns = ['id', 'user_id', 'amount', 'source', 'description', 'frequency', 'date', 'currency', 'status', 'category', 'recurring_id', 'tax_deducted', 'attachment_url', 'created_at', 'updated_at']
+            return jsonify({'data': dict(zip(columns, updated)), 'status': 'success'})
+        else:
+            return jsonify({'error': 'Income not found', 'status': 'error'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/income/<income_id>', methods=['DELETE'])
+@jwt_required
+def delete_income(income_id):
+    """Delete income record"""
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('DELETE FROM income WHERE id = %s RETURNING id', (income_id,))
+        deleted = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        if deleted:
+            return jsonify({'status': 'success'})
+        else:
+            return jsonify({'error': 'Income not found', 'status': 'error'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
 # ==================== REPORTS ====================
 @app.route('/api/reports', methods=['GET'])
 def get_reports():
     """Get all reports"""
     user_id = request.args.get('user_id', 'demo-user-001')
-    user_reports = [report for report in DATA_STORAGE['reports'] if report['user_id'] == user_id]
-    return jsonify({'data': user_reports, 'status': 'success'})
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, user_id, report_type, date_range, format, generated_at, data, created_at
+            FROM reports WHERE user_id = %s
+        ''', (user_id,))
+        rows = cur.fetchall()
+        columns = ['id', 'user_id', 'report_type', 'date_range', 'format', 'generated_at', 'data', 'created_at']
+        user_reports = [dict(zip(columns, row)) for row in rows]
+        cur.close()
+        conn.close()
+        return jsonify({'data': user_reports, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/api/reports', methods=['POST'])
 def generate_report():
@@ -360,38 +1104,70 @@ def generate_report():
         report_type = data.get('report_type', 'summary')
         date_range = data.get('date_range', {'start': '2024-03-01', 'end': '2024-03-31'})
         format_type = data.get('format', 'pdf')
+        generated_at = datetime.datetime.now()
         # Get user data
-        user_income = [inc for inc in DATA_STORAGE['income'] if inc['user_id'] == user_id]
-        user_expenses = [exp for exp in DATA_STORAGE['expenses'] if exp['user_id'] == user_id]
-        user_budgets = [bud for bud in DATA_STORAGE['budgets'] if bud['user_id'] == user_id]
-        user_goals = [goal for goal in DATA_STORAGE['savings_goals'] if goal['user_id'] == user_id]
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, user_id, amount, source, description, frequency, date, currency, status, category, recurring_id, tax_deducted, attachment_url, created_at, updated_at
+            FROM income WHERE user_id = %s
+        ''', (user_id,))
+        income_rows = cur.fetchall()
+        income_columns = ['id', 'user_id', 'amount', 'source', 'description', 'frequency', 'date', 'currency', 'status', 'category', 'recurring_id', 'tax_deducted', 'attachment_url', 'created_at', 'updated_at']
+        user_income = [dict(zip(income_columns, row)) for row in income_rows]
+        cur.execute('''
+            SELECT id, user_id, amount, category, description, date, created_at, updated_at
+            FROM expenses WHERE user_id = %s
+        ''', (user_id,))
+        expense_rows = cur.fetchall()
+        expense_columns = ['id', 'user_id', 'amount', 'category', 'description', 'date', 'created_at', 'updated_at']
+        user_expenses = [dict(zip(expense_columns, row)) for row in expense_rows]
+        cur.execute('''
+            SELECT id, user_id, name, category, amount, month, alert_threshold, created_at, updated_at
+            FROM budgets WHERE user_id = %s
+        ''', (user_id,))
+        budget_rows = cur.fetchall()
+        budget_columns = ['id', 'user_id', 'name', 'category', 'amount', 'month', 'alert_threshold', 'created_at', 'updated_at']
+        user_budgets = [dict(zip(budget_columns, row)) for row in budget_rows]
+        cur.execute('''
+            SELECT id, user_id, name, category, target_amount, current_amount, target_date, description, created_at, updated_at
+            FROM savings_goals WHERE user_id = %s
+        ''', (user_id,))
+        goal_rows = cur.fetchall()
+        goal_columns = ['id', 'user_id', 'name', 'category', 'target_amount', 'current_amount', 'target_date', 'description', 'created_at', 'updated_at']
+        user_goals = [dict(zip(goal_columns, row)) for row in goal_rows]
         # Generate report data
         report_data = {
-            'user_id': user_id,
-            'report_type': report_type,
-            'date_range': date_range,
-            'format': format_type,
-            'generated_at': datetime.datetime.now().isoformat(),
-            'data': {
-                'income': user_income,
-                'expenses': user_expenses,
-                'budgets': user_budgets,
-                'savings_goals': user_goals,
-                'total_income': sum(inc['amount'] for inc in user_income),
-                'total_expenses': sum(exp['amount'] for exp in user_expenses),
-                'net_income': sum(inc['amount'] for inc in user_income) - sum(exp['amount'] for exp in user_expenses),
-                'budget_count': len(user_budgets),
-                'savings_count': len(user_goals)
-            }
+            'income': user_income,
+            'expenses': user_expenses,
+            'budgets': user_budgets,
+            'savings_goals': user_goals,
+            'total_income': sum(inc['amount'] for inc in user_income),
+            'total_expenses': sum(exp['amount'] for exp in user_expenses),
+            'net_income': sum(inc['amount'] for inc in user_income) - sum(exp['amount'] for exp in user_expenses),
+            'budget_count': len(user_budgets),
+            'savings_count': len(user_goals)
         }
-        # Save report
-        new_report = {
-            'id': f"report-{len(DATA_STORAGE['reports']) + 1:03d}",
-            **report_data,
-            'created_at': datetime.datetime.now().isoformat()
-        }
-        DATA_STORAGE['reports'].append(new_report)
-        return jsonify({'data': new_report, 'status': 'success'})
+        cur.execute('''
+            INSERT INTO reports (user_id, report_type, date_range, format, generated_at, data, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, user_id, report_type, date_range, format, generated_at, data, created_at
+        ''', (
+            user_id,
+            report_type,
+            json.dumps(date_range),
+            format_type,
+            generated_at,
+            json.dumps(report_data),
+            generated_at
+        ))
+        new_report = cur.fetchone()
+        columns = ['id', 'user_id', 'report_type', 'date_range', 'format', 'generated_at', 'data', 'created_at']
+        report_dict = dict(zip(columns, new_report))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({'data': report_dict, 'status': 'success'})
     except Exception as e:
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
@@ -403,9 +1179,36 @@ def get_dashboard():
         user_id = request.args.get('user_id', 'demo-user-001')
         month = request.args.get('month', '2024-03')
         # Get user's data
-        user_income = [inc for inc in DATA_STORAGE['income'] if inc['user_id'] == user_id]
-        user_expenses = [exp for exp in DATA_STORAGE['expenses'] if exp['user_id'] == user_id and exp['date'].startswith(month)]
-        user_budgets = [bud for bud in DATA_STORAGE['budgets'] if bud['user_id'] == user_id and bud['month'] == month]
+        # Fetch income from DB
+        cur = get_db_conn().cursor()
+        cur.execute('''
+            SELECT id, user_id, amount, source, description, frequency, date, currency, status, category, recurring_id, tax_deducted, attachment_url, created_at, updated_at
+            FROM income WHERE user_id = %s
+        ''', (user_id,))
+        income_rows = cur.fetchall()
+        income_columns = ['id', 'user_id', 'amount', 'source', 'description', 'frequency', 'date', 'currency', 'status', 'category', 'recurring_id', 'tax_deducted', 'attachment_url', 'created_at', 'updated_at']
+        user_income = [dict(zip(income_columns, row)) for row in income_rows]
+        cur.close()
+        # Fetch expenses from DB
+        cur = get_db_conn().cursor()
+        cur.execute('''
+            SELECT id, user_id, amount, category, description, date, created_at, updated_at
+            FROM expenses WHERE user_id = %s AND to_char(date, 'YYYY-MM') = %s
+        ''', (user_id, month))
+        expense_rows = cur.fetchall()
+        expense_columns = ['id', 'user_id', 'amount', 'category', 'description', 'date', 'created_at', 'updated_at']
+        user_expenses = [dict(zip(expense_columns, row)) for row in expense_rows]
+        cur.close()
+        # Fetch budgets from DB
+        cur = get_db_conn().cursor()
+        cur.execute('''
+            SELECT id, user_id, name, category, amount, month, alert_threshold, created_at, updated_at
+            FROM budgets WHERE user_id = %s AND month = %s
+        ''', (user_id, month))
+        budget_rows = cur.fetchall()
+        budget_columns = ['id', 'user_id', 'name', 'category', 'amount', 'month', 'alert_threshold', 'created_at', 'updated_at']
+        user_budgets = [dict(zip(budget_columns, row)) for row in budget_rows]
+        cur.close()
         user_goals = [goal for goal in DATA_STORAGE['savings_goals'] if goal['user_id'] == user_id]
         user_recurring = [rec for rec in DATA_STORAGE['recurring_transactions'] if rec['user_id'] == user_id and rec['is_active']]
         user_notifications = [notif for notif in DATA_STORAGE['notifications'] if notif['user_id'] == user_id and not notif['is_read']]
@@ -479,8 +1282,36 @@ def get_analytics_summary():
         start_date = request.args.get('start_date', '2024-01-01')
         end_date = request.args.get('end_date', '2024-12-31')
         # Get user's data for date range
-        user_income = [inc for inc in DATA_STORAGE['income'] if inc['user_id'] == user_id and inc['date'] >= start_date and inc['date'] <= end_date]
-        user_expenses = [exp for exp in DATA_STORAGE['expenses'] if exp['user_id'] == user_id and exp['date'] >= start_date and exp['date'] <= end_date]
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, user_id, amount, source, description, frequency, date, currency, status, category, recurring_id, tax_deducted, attachment_url, created_at, updated_at
+            FROM income WHERE user_id = %s AND date >= %s AND date <= %s
+        ''', (user_id, start_date, end_date))
+        income_rows = cur.fetchall()
+        income_columns = ['id', 'user_id', 'amount', 'source', 'description', 'frequency', 'date', 'currency', 'status', 'category', 'recurring_id', 'tax_deducted', 'attachment_url', 'created_at', 'updated_at']
+        user_income = [dict(zip(income_columns, row)) for row in income_rows]
+        cur.close()
+        conn.close()
+        cur = get_db_conn().cursor()
+        cur.execute('''
+            SELECT id, user_id, amount, category, description, date, created_at, updated_at
+            FROM expenses WHERE user_id = %s AND date >= %s AND date <= %s
+        ''', (user_id, start_date, end_date))
+        expense_rows = cur.fetchall()
+        expense_columns = ['id', 'user_id', 'amount', 'category', 'description', 'date', 'created_at', 'updated_at']
+        user_expenses = [dict(zip(expense_columns, row)) for row in expense_rows]
+        cur.close()
+        # Fetch budgets from DB for analytics
+        cur = get_db_conn().cursor()
+        cur.execute('''
+            SELECT id, user_id, name, category, amount, month, alert_threshold, created_at, updated_at
+            FROM budgets WHERE user_id = %s AND date_part('year', to_date(month, 'YYYY-MM')) = date_part('year', %s::date)
+        ''', (user_id, start_date))
+        budget_rows = cur.fetchall()
+        budget_columns = ['id', 'user_id', 'name', 'category', 'amount', 'month', 'alert_threshold', 'created_at', 'updated_at']
+        user_budgets = [dict(zip(budget_columns, row)) for row in budget_rows]
+        cur.close()
         # Monthly trends
         monthly_income = {}
         monthly_expenses = {}
@@ -498,14 +1329,19 @@ def get_analytics_summary():
         source_totals = {}
         for inc in user_income:
             source_totals[inc['source']] = source_totals.get(inc['source'], 0) + inc['amount']
+        # Budget breakdown
+        budget_totals = {}
+        for bud in user_budgets:
+            budget_totals[bud['category']] = budget_totals.get(bud['category'], 0) + bud['amount']
         return jsonify({
             'data': {
                 'monthly_income': monthly_income,
                 'monthly_expenses': monthly_expenses,
                 'category_breakdown': category_totals,
                 'source_breakdown': source_totals,
-                'total_income': sum(user_income),
-                'total_expenses': sum(user_expenses),
+                'budget_breakdown': budget_totals,
+                'total_income': sum(inc['amount'] for inc in user_income),
+                'total_expenses': sum(exp['amount'] for exp in user_expenses),
                 'transaction_count': len(user_income) + len(user_expenses)
             },
             'status': 'success'
@@ -591,10 +1427,20 @@ def train_model():
 def get_data_status():
     """Get current data status"""
     user_id = request.args.get('user_id', 'demo-user-001')
+    # Fetch budgets from DB
+    cur = get_db_conn().cursor()
+    cur.execute('''
+        SELECT id, user_id, name, category, amount, month, alert_threshold, created_at, updated_at
+        FROM budgets WHERE user_id = %s
+    ''', (user_id,))
+    budget_rows = cur.fetchall()
+    budget_columns = ['id', 'user_id', 'name', 'category', 'amount', 'month', 'alert_threshold', 'created_at', 'updated_at']
+    user_budgets = [dict(zip(budget_columns, row)) for row in budget_rows]
+    cur.close()
     user_data = {
         'income': [inc for inc in DATA_STORAGE['income'] if inc['user_id'] == user_id],
         'expenses': [exp for exp in DATA_STORAGE['expenses'] if exp['user_id'] == user_id],
-        'budgets': [bud for bud in DATA_STORAGE['budgets'] if bud['user_id'] == user_id],
+        'budgets': user_budgets,
         'savings_goals': [goal for goal in DATA_STORAGE['savings_goals'] if goal['user_id'] == user_id],
         'recurring_transactions': [rec for rec in DATA_STORAGE['recurring_transactions'] if rec['user_id'] == user_id],
         'notifications': [notif for notif in DATA_STORAGE['notifications'] if notif['user_id'] == user_id],
@@ -624,24 +1470,78 @@ def clear_all_data():
     }
     return jsonify({'status': 'success', 'message': 'All data cleared'})
 
+
+# ==================== CATEGORIES ENDPOINT (PostgreSQL) ====================
 @app.route('/api/categories', methods=['GET'])
 def get_categories():
-    """Get available categories"""
-    return jsonify({'data': DATA_STORAGE['categories'], 'status': 'success'})
+    """Get available categories from PostgreSQL"""
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''SELECT id, name, type FROM categories ORDER BY name ASC''')
+        rows = cur.fetchall()
+        columns = ['id', 'name', 'type']
+        categories = [dict(zip(columns, row)) for row in rows]
+        cur.close()
+        conn.close()
+        return jsonify({'data': categories, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/api/income-sources', methods=['GET'])
 def get_income_sources():
-    """Get available income sources"""
-    return jsonify({'data': DATA_STORAGE['income_sources'], 'status': 'success'})
+    """Get available income sources from PostgreSQL"""
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''SELECT id, name FROM income_sources ORDER BY name ASC''')
+        rows = cur.fetchall()
+        columns = ['id', 'name']
+        sources = [dict(zip(columns, row)) for row in rows]
+        cur.close()
+        conn.close()
+        return jsonify({'data': sources, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/api/export/data', methods=['GET'])
 def export_data():
     """Export all data as JSON"""
     user_id = request.args.get('user_id', 'demo-user-001')
+    conn = get_db_conn()
+    cur = conn.cursor()
+    cur.execute('''
+        SELECT id, user_id, amount, source, description, frequency, date, currency, status, category, recurring_id, tax_deducted, attachment_url, created_at, updated_at
+        FROM income WHERE user_id = %s
+    ''', (user_id,))
+    income_rows = cur.fetchall()
+    income_columns = ['id', 'user_id', 'amount', 'source', 'description', 'frequency', 'date', 'currency', 'status', 'category', 'recurring_id', 'tax_deducted', 'attachment_url', 'created_at', 'updated_at']
+    user_income = [dict(zip(income_columns, row)) for row in income_rows]
+    cur.close()
+    conn.close()
+    cur = get_db_conn().cursor()
+    cur.execute('''
+        SELECT id, user_id, amount, category, description, date, created_at, updated_at
+        FROM expenses WHERE user_id = %s
+    ''', (user_id,))
+    expense_rows = cur.fetchall()
+    expense_columns = ['id', 'user_id', 'amount', 'category', 'description', 'date', 'created_at', 'updated_at']
+    user_expenses = [dict(zip(expense_columns, row)) for row in expense_rows]
+    cur.close()
+    # Fetch budgets from DB
+    cur = get_db_conn().cursor()
+    cur.execute('''
+        SELECT id, user_id, name, category, amount, month, alert_threshold, created_at, updated_at
+        FROM budgets WHERE user_id = %s
+    ''', (user_id,))
+    budget_rows = cur.fetchall()
+    budget_columns = ['id', 'user_id', 'name', 'category', 'amount', 'month', 'alert_threshold', 'created_at', 'updated_at']
+    user_budgets = [dict(zip(budget_columns, row)) for row in budget_rows]
+    cur.close()
     user_data = {
-        'income': [inc for inc in DATA_STORAGE['income'] if inc['user_id'] == user_id],
-        'expenses': [exp for exp in DATA_STORAGE['expenses'] if exp['user_id'] == user_id],
-        'budgets': [bud for bud in DATA_STORAGE['budgets'] if bud['user_id'] == user_id],
+        'income': user_income,
+        'expenses': user_expenses,
+        'budgets': user_budgets,
         'savings_goals': [goal for goal in DATA_STORAGE['savings_goals'] if goal['user_id'] == user_id],
         'recurring_transactions': [rec for rec in DATA_STORAGE['recurring_transactions'] if rec['user_id'] == user_id],
         'notifications': [notif for notif in DATA_STORAGE['notifications'] if notif['user_id'] == user_id],

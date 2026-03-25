@@ -14,20 +14,26 @@ CREATE TABLE IF NOT EXISTS pending_users (
 );
 
 CREATE TABLE IF NOT EXISTS income (
-    id SERIAL PRIMARY KEY,
-    user_id UUID REFERENCES auth.users(id),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id),
     amount NUMERIC(12,2) NOT NULL,
     source VARCHAR(100),
     description TEXT,
     frequency VARCHAR(50),
     date DATE NOT NULL,
+    currency VARCHAR(10) DEFAULT 'USD',
+    status VARCHAR(20) DEFAULT 'confirmed',
+    category VARCHAR(50),
+    recurring_id UUID,
+    tax_deducted NUMERIC(12,2),
+    attachment_url VARCHAR(255),
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
 -- Expenses table
 CREATE TABLE IF NOT EXISTS expenses (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id),
     amount NUMERIC(12,2) NOT NULL,
     category VARCHAR(50) NOT NULL,
@@ -39,7 +45,7 @@ CREATE TABLE IF NOT EXISTS expenses (
 
 -- Budgets table
 CREATE TABLE IF NOT EXISTS budgets (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id),
     name VARCHAR(100),
     category VARCHAR(50) NOT NULL,
@@ -53,7 +59,7 @@ CREATE TABLE IF NOT EXISTS budgets (
 
 -- Savings Goals table
 CREATE TABLE IF NOT EXISTS savings_goals (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id),
     name VARCHAR(100),
     category VARCHAR(50),
@@ -97,7 +103,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Recurring Transactions table
 CREATE TABLE IF NOT EXISTS recurring_transactions (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id),
     name VARCHAR(100),
     type VARCHAR(50),
@@ -116,7 +122,7 @@ CREATE TABLE IF NOT EXISTS recurring_transactions (
 
 -- Notifications table
 CREATE TABLE IF NOT EXISTS notifications (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id),
     title VARCHAR(255),
     message TEXT,
@@ -128,7 +134,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 CREATE TABLE IF NOT EXISTS reports (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id),
     report_type VARCHAR(50),
     date_range JSONB,
