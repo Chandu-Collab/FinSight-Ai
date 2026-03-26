@@ -941,6 +941,11 @@ def verify_email():
         cur.close()
         conn.close()
         return jsonify({'error': 'Invalid OTP'}), 400
+    
+    # Handle timezone comparison - if otp_expires_at is naive, assume it's UTC
+    if otp_expires_at.tzinfo is None:
+        otp_expires_at = otp_expires_at.replace(tzinfo=tz.utc)
+    
     if dt.now(tz.utc) > otp_expires_at:
         cur.close()
         conn.close()

@@ -12,6 +12,9 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [fullName, setFullName] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
+  const [gender, setGender] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
@@ -39,18 +42,25 @@ export default function RegisterPage() {
       return
     }
 
+    // Validate required fields
+    if (!fullName || !phoneNumber || !dateOfBirth || !gender) {
+      toast.error('Please fill in all required fields')
+      setLoading(false)
+      return
+    }
+
     try {
-      // Hash password (in production, use proper hashing like bcrypt)
-      const password_hash = passwordUtils.encode(password)
+      // Send password as plain text (backend will handle hashing)
+      const password_hash = password
       
       // Initiate registration with OTP
       const result = await authService.register({ 
         email, 
         password_hash, 
         name: fullName,
-        phone_number: '',
-        date_of_birth: '',
-        gender: ''
+        phone_number: phoneNumber,
+        date_of_birth: dateOfBirth,
+        gender: gender
       })
       
       toast.success('Registration initiated! Please check your email for OTP.')
@@ -92,6 +102,62 @@ export default function RegisterPage() {
                 className="appearance-none block w-full px-3 py-2 border border-input rounded-md placeholder-muted-foreground text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm bg-background"
                 placeholder="Enter your full name"
               />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="phoneNumber" className="block text-sm font-medium text-foreground">
+              Phone Number
+            </label>
+            <div className="mt-1">
+              <input
+                id="phoneNumber"
+                name="phoneNumber"
+                type="tel"
+                required
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                className="appearance-none block w-full px-3 py-2 border border-input rounded-md placeholder-muted-foreground text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm bg-background"
+                placeholder="Enter your phone number"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="dateOfBirth" className="block text-sm font-medium text-foreground">
+              Date of Birth
+            </label>
+            <div className="mt-1">
+              <input
+                id="dateOfBirth"
+                name="dateOfBirth"
+                type="date"
+                required
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+                className="appearance-none block w-full px-3 py-2 border border-input rounded-md placeholder-muted-foreground text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm bg-background"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="gender" className="block text-sm font-medium text-foreground">
+              Gender
+            </label>
+            <div className="mt-1">
+              <select
+                id="gender"
+                name="gender"
+                required
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                className="appearance-none block w-full px-3 py-2 border border-input rounded-md placeholder-muted-foreground text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm bg-background"
+              >
+                <option value="">Select gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
           </div>
 
