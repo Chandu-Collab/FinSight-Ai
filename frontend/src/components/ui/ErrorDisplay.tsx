@@ -63,19 +63,19 @@ export function ErrorDisplay({
           {getIcon()}
         </div>
         <div className="ml-3 flex-1">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+          <h3 className="text-sm font-medium text-foreground">
             {displayTitle}
           </h3>
-          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <div className="mt-2 text-sm text-muted-foreground">
             {displayMessage}
           </div>
           
           {process.env.NODE_ENV === 'development' && error && typeof error === 'object' && error.stack && (
             <details className="mt-2">
-              <summary className="cursor-pointer text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+              <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
                 Technical Details
               </summary>
-              <pre className="mt-2 text-xs text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-auto max-h-32">
+              <pre className="mt-2 text-xs text-foreground bg-muted p-2 rounded overflow-auto max-h-32">
                 {error.stack}
               </pre>
             </details>
@@ -116,7 +116,7 @@ export function FormError({ error }: { error?: string }) {
   if (!error) return null
 
   return (
-    <div className="flex items-center space-x-2 text-red-600 dark:text-red-400 text-sm mt-1">
+    <div className="flex items-center space-x-2 text-destructive text-sm mt-1">
       <AlertTriangle className="h-4 w-4" />
       <span>{error}</span>
     </div>
@@ -139,13 +139,13 @@ export function NetworkError({ onRetry }: { onRetry?: () => void }) {
 export function NotFoundError({ onRetry, entityType = 'data' }: { onRetry?: () => void; entityType?: string }) {
   return (
     <div className="text-center py-12">
-      <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-        <AlertCircle className="h-8 w-8 text-gray-400" />
+      <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+        <AlertCircle className="h-8 w-8 text-muted-foreground" />
       </div>
-      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+      <h3 className="text-lg font-medium text-foreground mb-2">
         {entityType} Not Found
       </h3>
-      <p className="text-gray-500 dark:text-gray-400 mb-4">
+      <p className="text-muted-foreground mb-4">
         The {entityType.toLowerCase()} you're looking for doesn't exist or has been removed.
       </p>
       {onRetry && (
@@ -162,13 +162,13 @@ export function NotFoundError({ onRetry, entityType = 'data' }: { onRetry?: () =
 export function PermissionError() {
   return (
     <div className="text-center py-12">
-      <div className="mx-auto w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
-        <AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400" />
+      <div className="mx-auto w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
+        <AlertTriangle className="h-8 w-8 text-destructive" />
       </div>
-      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+      <h3 className="text-lg font-medium text-foreground mb-2">
         Access Denied
       </h3>
-      <p className="text-gray-500 dark:text-gray-400">
+      <p className="text-muted-foreground">
         You don't have permission to access this resource.
       </p>
     </div>
@@ -179,13 +179,13 @@ export function PermissionError() {
 export function ServerError({ onRetry }: { onRetry?: () => void }) {
   return (
     <div className="text-center py-12">
-      <div className="mx-auto w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
-        <AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400" />
+      <div className="mx-auto w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
+        <AlertTriangle className="h-8 w-8 text-destructive" />
       </div>
-      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+      <h3 className="text-lg font-medium text-foreground mb-2">
         Server Error
       </h3>
-      <p className="text-gray-500 dark:text-gray-400 mb-4">
+      <p className="text-muted-foreground mb-4">
         Something went wrong on our end. Our team has been notified and is working to fix this issue.
       </p>
       {onRetry && (
@@ -217,14 +217,14 @@ export function EmptyState({
   return (
     <div className="text-center py-12">
       {icon && (
-        <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+        <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
           {icon}
         </div>
       )}
-      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+      <h3 className="text-lg font-medium text-foreground mb-2">
         {title}
       </h3>
-      <p className="text-gray-500 dark:text-gray-400 mb-4">
+      <p className="text-muted-foreground mb-4">
         {message}
       </p>
       {(action || onAction) && (

@@ -60,27 +60,27 @@ export default class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
+        <div className="min-h-screen bg-background flex items-center justify-center px-4">
           <div className="max-w-md w-full">
             <div className="text-center">
-              <div className="mx-auto w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
-                <AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400" />
+              <div className="mx-auto w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
+                <AlertTriangle className="h-8 w-8 text-destructive" />
               </div>
               
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              <h1 className="text-2xl font-bold text-foreground mb-2">
                 Something went wrong
               </h1>
               
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
+              <p className="text-muted-foreground mb-6">
                 We apologize for the inconvenience. An unexpected error occurred while rendering this page.
               </p>
 
               {process.env.NODE_ENV === 'development' && this.state.error && (
                 <details className="mb-6 text-left">
-                  <summary className="cursor-pointer text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                  <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
                     Error Details
                   </summary>
-                  <div className="mt-2 p-3 bg-gray-100 dark:bg-gray-800 rounded text-xs text-gray-800 dark:text-gray-200 font-mono overflow-auto max-h-40">
+                  <div className="mt-2 p-3 bg-muted rounded text-xs text-foreground font-mono overflow-auto max-h-40">
                     <div className="font-bold mb-2">Error:</div>
                     <div className="mb-3">{this.state.error.message}</div>
                     {this.state.error.stack && (
@@ -113,7 +113,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                 </Button>
               </div>
 
-              <div className="mt-6 text-xs text-gray-500 dark:text-gray-400">
+              <div className="mt-6 text-xs text-muted-foreground">
                 If this problem persists, please contact support.
               </div>
             </div>

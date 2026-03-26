@@ -5,6 +5,7 @@ import random
 import string
 import datetime
 import decimal
+from datetime import datetime as dt, timezone as tz
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import psycopg2
@@ -317,7 +318,7 @@ class ExpensePredictor:
 predictor = ExpensePredictor()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=['http://localhost:3000', 'http://127.0.0.1:3000'], supports_credentials=True)
 
 def jwt_required(f):
     @wraps(f)
@@ -881,7 +882,7 @@ def generate_jwt(user_id, email):
     payload = {
         'user_id': str(user_id),
         'email': email,
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+        'exp': dt.now(tz.utc) + datetime.timedelta(hours=24)
     }
     token = jwt.encode(payload, JWT_SECRET, algorithm='HS256')
     return token
@@ -910,7 +911,7 @@ def register():
         conn.close()
         return jsonify({'error': 'Registration already pending. Please verify OTP.'}), 400
     otp = generate_otp()
-    expires_at = datetime.datetime.utcnow() + datetime.timedelta(minutes=10)
+    expires_at = dt.now(tz.utc) + datetime.timedelta(minutes=10)
     cur.execute('INSERT INTO pending_users (email, password_hash, name, phone_number, date_of_birth, gender, otp, otp_expires_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)',
                 (email, password_hash, name, phone_number, date_of_birth, gender, otp, expires_at))
     conn.commit()
@@ -940,7 +941,7 @@ def verify_email():
         cur.close()
         conn.close()
         return jsonify({'error': 'Invalid OTP'}), 400
-    if datetime.datetime.utcnow() > otp_expires_at:
+    if dt.now(tz.utc) > otp_expires_at:
         cur.close()
         conn.close()
         return jsonify({'error': 'OTP expired'}), 400
@@ -962,30 +963,48 @@ def login_initiate():
     data = request.get_json()
     email = data['email']
     password_hash = data['password_hash']
+    
     conn = get_db_conn()
     cur = conn.cursor()
+    
+    # Try to find user with the provided hash first
     cur.execute('SELECT id, email_verified FROM users WHERE email=%s AND password_hash=%s', (email, password_hash))
     row = cur.fetchone()
+    
+    # If not found, try with base64 decoded password (for backward compatibility)
+    if not row:
+        try:
+            import base64
+            decoded_password = base64.b64decode(password_hash).decode()
+            cur.execute('SELECT id, email_verified FROM users WHERE email=%s AND password_hash=%s', (email, decoded_password))
+            row = cur.fetchone()
+        except:
+            pass
+    
     if not row:
         cur.close()
         conn.close()
         return jsonify({'error': 'Invalid credentials'}), 401
+        
     user_id, email_verified = row
     if not email_verified:
         cur.close()
         conn.close()
         return jsonify({'error': 'Email not verified'}), 403
+        
     # Generate OTP and store in login_otps
     otp = generate_otp()
-    expires_at = datetime.datetime.utcnow() + datetime.timedelta(minutes=10)
+    expires_at = dt.now(tz.utc) + datetime.timedelta(minutes=10)
     # Remove any previous OTPs for this user
     cur.execute('DELETE FROM login_otps WHERE user_id=%s', (user_id,))
     cur.execute('INSERT INTO login_otps (user_id, otp, expires_at) VALUES (%s, %s, %s)', (user_id, otp, expires_at))
     conn.commit()
+    
     # Send OTP email
     send_otp_email(email, otp)
     cur.close()
     conn.close()
+    
     return jsonify({'message': 'OTP sent to your email. Please verify to complete login.'})
 
 # --- LOGIN OTP VERIFICATION ENDPOINT ---
@@ -1014,7 +1033,12 @@ def login_verify_otp():
         cur.close()
         conn.close()
         return jsonify({'error': 'Invalid OTP'}), 400
-    if datetime.datetime.utcnow() > expires_at:
+    
+    # Convert expires_at to timezone-aware if it's naive
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=tz.utc)
+    
+    if dt.now(tz.utc) > expires_at:
         cur.close()
         conn.close()
         return jsonify({'error': 'OTP expired'}), 400

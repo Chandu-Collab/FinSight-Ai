@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
+import { authService } from '@/lib/auth'
+import { passwordUtils } from '@/lib/password'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 
@@ -30,21 +31,32 @@ export default function RegisterPage() {
       return
     }
 
+    // Validate password
+    const passwordValidation = passwordUtils.validate(password)
+    if (!passwordValidation.isValid) {
+      toast.error(passwordValidation.errors[0] || 'Invalid password')
+      setLoading(false)
+      return
+    }
+
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          }
-        }
+      // Hash password (in production, use proper hashing like bcrypt)
+      const password_hash = passwordUtils.encode(password)
+      
+      // Initiate registration with OTP
+      const result = await authService.register({ 
+        email, 
+        password_hash, 
+        name: fullName,
+        phone_number: '',
+        date_of_birth: '',
+        gender: ''
       })
-
-      if (error) throw error
-
-      toast.success('Account created successfully! Please check your email to verify.')
-      router.push('/auth/login')
+      
+      toast.success('Registration initiated! Please check your email for OTP.')
+      
+      // Redirect to OTP verification page
+      router.push(`/auth/verify-otp?email=${encodeURIComponent(email)}&type=register`)
     } catch (error: any) {
       toast.error(error.message || 'Failed to create account')
     } finally {
@@ -54,10 +66,19 @@ export default function RegisterPage() {
 
   return (
     <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-      <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+      <div className="bg-card py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-border">
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-foreground">
+            Create your account
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            We'll send a verification code to your email
+          </p>
+        </div>
+
         <form className="space-y-6" onSubmit={handleRegister}>
           <div>
-            <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="fullName" className="block text-sm font-medium text-foreground">
               Full Name
             </label>
             <div className="mt-1">
@@ -68,14 +89,14 @@ export default function RegisterPage() {
                 required
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="appearance-none block w-full px-3 py-2 border border-input rounded-md placeholder-muted-foreground text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm bg-background"
                 placeholder="Enter your full name"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="email" className="block text-sm font-medium text-foreground">
               Email address
             </label>
             <div className="mt-1">
@@ -87,14 +108,14 @@ export default function RegisterPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="appearance-none block w-full px-3 py-2 border border-input rounded-md placeholder-muted-foreground text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm bg-background"
                 placeholder="Enter your email"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="password" className="block text-sm font-medium text-foreground">
               Password
             </label>
             <div className="mt-1">
@@ -105,14 +126,14 @@ export default function RegisterPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="appearance-none block w-full px-3 py-2 border border-input rounded-md placeholder-muted-foreground text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm bg-background"
                 placeholder="Create a password (min. 6 characters)"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground">
               Confirm Password
             </label>
             <div className="mt-1">
@@ -123,7 +144,7 @@ export default function RegisterPage() {
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="appearance-none block w-full px-3 py-2 border border-input rounded-md placeholder-muted-foreground text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm bg-background"
                 placeholder="Confirm your password"
               />
             </div>
@@ -133,9 +154,9 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Creating account...' : 'Create account'}
+              {loading ? 'Sending OTP...' : 'Send OTP'}
             </button>
           </div>
         </form>
@@ -143,17 +164,17 @@ export default function RegisterPage() {
         <div className="mt-6">
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
+              <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or</span>
+              <span className="px-2 bg-card text-muted-foreground">Or</span>
             </div>
           </div>
 
           <div className="mt-6 text-center">
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-muted-foreground">
               Already have an account?{' '}
-              <Link href="/auth/login" className="font-medium text-blue-600 hover:text-blue-500">
+              <Link href="/auth/login" className="font-medium text-primary hover:text-primary/80">
                 Sign in
               </Link>
             </span>
@@ -161,13 +182,13 @@ export default function RegisterPage() {
         </div>
 
         <div className="mt-4">
-          <p className="text-xs text-gray-500 text-center">
+          <p className="text-xs text-muted-foreground text-center">
             By creating an account, you agree to our{' '}
-            <a href="#" className="text-blue-600 hover:text-blue-500">
+            <a href="#" className="text-primary hover:text-primary/80">
               Terms of Service
             </a>{' '}
             and{' '}
-            <a href="#" className="text-blue-600 hover:text-blue-500">
+            <a href="#" className="text-primary hover:text-primary/80">
               Privacy Policy
             </a>
           </p>

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { AppLayout } from '@/components/layout/AppLayout'
 import { Plus, Target, TrendingUp, Calendar, DollarSign, Award, AlertCircle, Trophy, Zap, Star, Flag, CheckCircle2, Clock, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -122,7 +123,7 @@ export default function SavingsPage() {
       case 'completed': return 'text-green-600 bg-green-100'
       case 'overdue': return 'text-red-600 bg-red-100'
       case 'active': return 'text-blue-600 bg-blue-100'
-      default: return 'text-gray-600 bg-gray-100'
+      default: return 'text-muted-foreground bg-muted'
     }
   }
 
@@ -140,7 +141,7 @@ export default function SavingsPage() {
     if (!is_on_track) return 'bg-orange-500'
     if (percentage >= 75) return 'bg-blue-500'
     if (percentage >= 50) return 'bg-yellow-500'
-    return 'bg-gray-300'
+    return 'bg-muted'
   }
 
   const totalTarget = goals.reduce((sum, goal) => sum + goal.target_amount, 0)
@@ -164,9 +165,10 @@ export default function SavingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <AppLayout>
+      <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
       {/* Modern Header */}
-      <header className="bg-white/80 backdrop-blur-lg shadow-sm border-b border-gray-200/50 sticky top-0 z-50">
+      <header className="bg-card/80 backdrop-blur-lg shadow-sm border-b border-border/50 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
@@ -194,9 +196,9 @@ export default function SavingsPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Enhanced Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-white/80 backdrop-blur-sm border-2 border-blue-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="bg-card/80 backdrop-blur-sm border-2 border-blue-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Total Target</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Target</CardTitle>
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
                 <Target className="h-4 w-4 text-white" />
               </div>
@@ -205,7 +207,7 @@ export default function SavingsPage() {
               <div className="text-3xl font-bold text-blue-600">
                 ${totalTarget.toLocaleString()}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Across {goals.length} goals
               </p>
               <div className="mt-3 flex items-center text-sm">
@@ -217,7 +219,7 @@ export default function SavingsPage() {
 
           <Card className="bg-white/80 backdrop-blur-sm border-2 border-green-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Total Saved</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Saved</CardTitle>
               <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
                 <DollarSign className="h-4 w-4 text-white" />
               </div>
@@ -226,7 +228,7 @@ export default function SavingsPage() {
               <div className="text-3xl font-bold text-green-600">
                 ${totalSaved.toLocaleString()}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 {overallProgress.toFixed(1)}% progress
               </p>
               <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
@@ -240,7 +242,7 @@ export default function SavingsPage() {
 
           <Card className="bg-white/80 backdrop-blur-sm border-2 border-orange-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Remaining</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Remaining</CardTitle>
               <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center">
                 <Zap className="h-4 w-4 text-white" />
               </div>
@@ -249,7 +251,7 @@ export default function SavingsPage() {
               <div className="text-3xl font-bold text-orange-600">
                 ${totalRemaining.toLocaleString()}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 To reach all goals
               </p>
               <div className="mt-3 flex items-center text-sm">
@@ -261,7 +263,7 @@ export default function SavingsPage() {
 
           <Card className="bg-white/80 backdrop-blur-sm border-2 border-purple-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Active Goals</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Active Goals</CardTitle>
               <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
                 <Star className="h-4 w-4 text-white" />
               </div>
@@ -270,7 +272,7 @@ export default function SavingsPage() {
               <div className="text-3xl font-bold text-purple-600">
                 {activeGoals.length}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 {completedGoals.length} completed
               </p>
               <div className="mt-3 flex items-center space-x-2">
@@ -303,7 +305,7 @@ export default function SavingsPage() {
                     <div key={goal.id} className="border rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center space-x-3">
-                          <span className="text-2xl">{categoryIcons[goal.category]}</span>
+                          <span className="text-2xl">{categoryIcons[goal.category]?.icon}</span>
                           <div>
                             <h3 className="font-medium text-gray-900">{goal.name}</h3>
                             <p className="text-sm text-gray-500">{goal.category}</p>
@@ -326,10 +328,10 @@ export default function SavingsPage() {
                       {/* Progress Bar */}
                       <div className="mb-3">
                         <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-600">Progress</span>
+                          <span className="text-muted-foreground">Progress</span>
                           <span className="font-medium">{goal.progress_percentage.toFixed(1)}%</span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="w-full bg-muted rounded-full h-2">
                           <div
                             className={`h-2 rounded-full ${getProgressColor(goal.progress_percentage, goal.is_on_track)}`}
                             style={{ width: `${Math.min(goal.progress_percentage, 100)}%` }}
@@ -416,7 +418,7 @@ export default function SavingsPage() {
                     <div key={goal.id} className="border border-green-200 rounded-lg p-4 bg-green-50">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                          <span className="text-2xl">{categoryIcons[goal.category]}</span>
+                          <span className="text-2xl">{categoryIcons[goal.category]?.icon}</span>
                           <div>
                             <h3 className="font-medium text-gray-900">{goal.name}</h3>
                             <p className="text-sm text-gray-500">{goal.category}</p>
@@ -462,7 +464,7 @@ export default function SavingsPage() {
                     <div key={goal.id} className="border border-red-200 rounded-lg p-4 bg-red-50">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                          <span className="text-2xl">{categoryIcons[goal.category]}</span>
+                          <span className="text-2xl">{categoryIcons[goal.category]?.icon}</span>
                           <div>
                             <h3 className="font-medium text-gray-900">{goal.name}</h3>
                             <p className="text-sm text-gray-500">{goal.category}</p>
@@ -491,12 +493,12 @@ export default function SavingsPage() {
             <Card>
               <CardContent className="text-center py-12">
                 <div className="flex justify-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-                    <Target className="h-8 w-8 text-gray-400" />
+                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                    <Target className="h-8 w-8 text-muted-foreground" />
                   </div>
                 </div>
-                <h3 className="mt-4 text-lg font-medium text-gray-900">No savings goals yet</h3>
-                <p className="mt-2 text-sm text-gray-500">
+                <h3 className="mt-4 text-lg font-medium text-foreground">No savings goals yet</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
                   Create your first savings goal to start tracking your progress.
                 </p>
                 <div className="mt-6">
@@ -513,6 +515,7 @@ export default function SavingsPage() {
         </div>
       </main>
     </div>
+    </AppLayout>
   )
 
   async function handleDelete(id: string) {

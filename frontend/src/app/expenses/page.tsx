@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { AppLayout } from '@/components/layout/AppLayout'
 import { Plus, TrendingDown, Calendar, CreditCard, Edit, Trash2, Search, Filter, Download, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, Wallet } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -47,16 +48,16 @@ const categoryIcons: Record<string, string> = {
 }
 
 const categoryColors: Record<string, { bg: string, text: string, gradient: string }> = {
-  'Food & Dining': { bg: 'bg-orange-100', text: 'text-orange-800', gradient: 'from-orange-500 to-red-500' },
-  'Transportation': { bg: 'bg-blue-100', text: 'text-blue-800', gradient: 'from-blue-500 to-cyan-500' },
-  'Shopping': { bg: 'bg-purple-100', text: 'text-purple-800', gradient: 'from-purple-500 to-pink-500' },
-  'Entertainment': { bg: 'bg-pink-100', text: 'text-pink-800', gradient: 'from-pink-500 to-rose-500' },
-  'Bills & Utilities': { bg: 'bg-red-100', text: 'text-red-800', gradient: 'from-red-500 to-orange-500' },
-  'Healthcare': { bg: 'bg-green-100', text: 'text-green-800', gradient: 'from-green-500 to-emerald-500' },
-  'Education': { bg: 'bg-indigo-100', text: 'text-indigo-800', gradient: 'from-indigo-500 to-purple-500' },
-  'Travel': { bg: 'bg-yellow-100', text: 'text-yellow-800', gradient: 'from-yellow-500 to-amber-500' },
-  'Subscriptions': { bg: 'bg-gray-100', text: 'text-gray-800', gradient: 'from-gray-500 to-slate-500' },
-  'Other': { bg: 'bg-gray-100', text: 'text-gray-800', gradient: 'from-gray-500 to-slate-500' }
+  'Food & Dining': { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-800 dark:text-orange-200', gradient: 'from-orange-500 to-red-500' },
+  'Transportation': { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-800 dark:text-blue-200', gradient: 'from-blue-500 to-cyan-500' },
+  'Shopping': { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-800 dark:text-purple-200', gradient: 'from-purple-500 to-pink-500' },
+  'Entertainment': { bg: 'bg-pink-100 dark:bg-pink-900/30', text: 'text-pink-800 dark:text-pink-200', gradient: 'from-pink-500 to-rose-500' },
+  'Bills & Utilities': { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-800 dark:text-red-200', gradient: 'from-red-500 to-orange-500' },
+  'Healthcare': { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-800 dark:text-green-200', gradient: 'from-green-500 to-emerald-500' },
+  'Education': { bg: 'bg-indigo-100 dark:bg-indigo-900/30', text: 'text-indigo-800 dark:text-indigo-200', gradient: 'from-indigo-500 to-purple-500' },
+  'Travel': { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-800 dark:text-yellow-200', gradient: 'from-yellow-500 to-amber-500' },
+  'Subscriptions': { bg: 'bg-muted', text: 'text-muted-foreground', gradient: 'from-gray-500 to-slate-500' },
+  'Other': { bg: 'bg-muted', text: 'text-muted-foreground', gradient: 'from-gray-500 to-slate-500' }
 }
 
 export default function ExpensesPage() {
@@ -135,19 +136,20 @@ export default function ExpensesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading expenses...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground font-medium">Loading expenses...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <AppLayout>
+      <div className="bg-gradient-to-br from-background to-accent/20">
       {/* Modern Header */}
-      <header className="bg-white/80 backdrop-blur-lg shadow-sm border-b border-gray-200/50 sticky top-0 z-50">
+      <header className="bg-card/80 backdrop-blur-lg shadow-sm border-b border-border/50 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
@@ -158,11 +160,11 @@ export default function ExpensesPage() {
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent">
                   Expense Management
                 </h1>
-                <p className="text-sm text-gray-500">Track and manage your expenses</p>
+                <p className="text-sm text-muted-foreground">Track and manage your expenses</p>
               </div>
             </div>
             <div className="flex space-x-3">
-              <Button variant="outline" className="border-gray-300 hover:bg-gray-50">
+              <Button variant="outline" className="border-border hover:bg-accent">
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
@@ -181,9 +183,9 @@ export default function ExpensesPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Enhanced Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-white/80 backdrop-blur-sm border-2 border-red-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="bg-card/80 backdrop-blur-sm border-2 border-red-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Total Expenses</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Expenses</CardTitle>
               <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-pink-500 rounded-lg flex items-center justify-center">
                 <CreditCard className="h-4 w-4 text-white" />
               </div>
@@ -192,7 +194,7 @@ export default function ExpensesPage() {
               <div className="text-3xl font-bold text-red-600">
                 ${totalExpenses.toLocaleString()}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 From {filteredExpenses.length} transactions
               </p>
               <div className="mt-3 flex items-center text-sm">
@@ -202,9 +204,9 @@ export default function ExpensesPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/80 backdrop-blur-sm border-2 border-orange-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="bg-card/80 backdrop-blur-sm border-2 border-orange-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Average Expense</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Average Expense</CardTitle>
               <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center">
                 <TrendingDown className="h-4 w-4 text-white" />
               </div>
@@ -213,7 +215,7 @@ export default function ExpensesPage() {
               <div className="text-3xl font-bold text-orange-600">
                 ${filteredExpenses.length > 0 ? (totalExpenses / filteredExpenses.length).toFixed(2) : '0.00'}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Per transaction
               </p>
               <div className="mt-3 flex items-center text-sm">
@@ -223,9 +225,9 @@ export default function ExpensesPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/80 backdrop-blur-sm border-2 border-purple-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="bg-card/80 backdrop-blur-sm border-2 border-purple-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Top Category</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Top Category</CardTitle>
               <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
                 <PieChart className="h-4 w-4 text-white" />
               </div>
@@ -237,7 +239,7 @@ export default function ExpensesPage() {
                   : 'None'
                 }
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Highest spending category
               </p>
               {Object.keys(categoryTotals).length > 0 && (
@@ -250,16 +252,16 @@ export default function ExpensesPage() {
         </div>
 
         {/* Enhanced Search and Filter */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50 p-4 sm:p-6 mb-6">
+        <div className="bg-card/80 backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 p-4 sm:p-6 mb-6">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Search expenses by description, category, or amount..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50"
+                className="pl-10 w-full px-4 py-3 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50"
               />
             </div>
           </div>
@@ -271,7 +273,7 @@ export default function ExpensesPage() {
                 "px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200",
                 selectedCategory === 'all'
                   ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-muted text-foreground hover:bg-accent'
               )}
             >
               All Categories
@@ -284,7 +286,7 @@ export default function ExpensesPage() {
                   "px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200",
                   selectedCategory === category
                     ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-muted text-foreground hover:bg-accent'
                 )}
               >
                 <span className="mr-1">{categoryIcons[category]}</span>
@@ -298,10 +300,10 @@ export default function ExpensesPage() {
         </div>
 
         {/* Enhanced Expense List */}
-        <Card className="bg-white/80 backdrop-blur-sm border-2 border-gray-200/50 shadow-lg">
+        <Card className="bg-card/80 backdrop-blur-sm border-2 border-border/50 shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between pb-4">
-            <CardTitle className="text-lg font-semibold text-gray-800">Expense Records</CardTitle>
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <CardTitle className="text-lg font-semibold text-foreground">Expense Records</CardTitle>
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <BarChart3 className="h-4 w-4" />
               <span>{filteredExpenses.length} transactions</span>
             </div>
@@ -314,8 +316,8 @@ export default function ExpensesPage() {
                     <CreditCard className="h-10 w-10 text-red-400" />
                   </div>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No expense records</h3>
-                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                <h3 className="text-xl font-semibold text-foreground mb-2">No expense records</h3>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                   {searchTerm || selectedCategory !== 'all' 
                     ? 'No expenses found matching your filters. Try adjusting your search or filter criteria.' 
                     : 'Start by adding your first expense record to begin tracking your finances.'
@@ -332,43 +334,43 @@ export default function ExpensesPage() {
               <div className="overflow-x-auto">
                 <table className="min-w-full">
                   <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <tr className="border-b border-border">
+                      <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Date
                       </th>
-                      <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Category
                       </th>
-                      <th className="hidden md:table-cell px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="hidden md:table-cell px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Description
                       </th>
-                      <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Amount
                       </th>
-                      <th className="px-3 sm:px-6 py-3 sm:py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-3 sm:px-6 py-3 sm:py-4 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-border">
                     {filteredExpenses.map((expense: Expense) => (
-                      <tr key={expense.id} className="hover:bg-gray-50/50 transition-colors duration-150">
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                      <tr key={expense.id} className="hover:bg-muted/50 transition-colors duration-150">
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-foreground font-medium">
                           <div className="flex flex-col">
                             <span className="text-xs sm:text-sm">{format(new Date(expense.date), 'MMM dd, yyyy')}</span>
-                            <span className="text-xs text-gray-500 sm:hidden">{format(new Date(expense.date), 'h:mm a')}</span>
+                            <span className="text-xs text-muted-foreground sm:hidden">{format(new Date(expense.date), 'h:mm a')}</span>
                           </div>
                         </td>
                         <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-semibold ${categoryColors[expense.category]?.bg || 'bg-gray-100'} ${categoryColors[expense.category]?.text || 'text-gray-800'}`}>
+                          <span className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-semibold ${categoryColors[expense.category]?.bg || 'bg-muted'} ${categoryColors[expense.category]?.text || 'text-foreground'}`}>
                             <span className="mr-1">{categoryIcons[expense.category]}</span>
                             <span className="hidden sm:inline">{expense.category}</span>
                             <span className="sm:hidden">{expense.category.split(' ')[0]}</span>
                           </span>
                         </td>
-                        <td className="hidden md:table-cell px-6 py-4 text-sm text-gray-600">
+                        <td className="hidden md:table-cell px-6 py-4 text-sm text-muted-foreground">
                           <div className="max-w-xs truncate">
-                            {expense.description || <span className="text-gray-400 italic">No description</span>}
+                            {expense.description || <span className="text-muted-foreground italic">No description</span>}
                           </div>
                         </td>
                         <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
@@ -376,7 +378,7 @@ export default function ExpensesPage() {
                             <span className="text-lg sm:text-xl font-bold text-red-600">
                               -${expense.amount.toLocaleString()}
                             </span>
-                            <span className="text-xs text-gray-500 sm:hidden">
+                            <span className="text-xs text-muted-foreground sm:hidden">
                               {expense.category.split(' ')[0]}
                             </span>
                           </div>
@@ -384,7 +386,7 @@ export default function ExpensesPage() {
                         <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
                           <div className="flex justify-end space-x-1 sm:space-x-2">
                             <Link href={`/expenses/${expense.id}/edit`}>
-                              <Button variant="outline" size="sm" className="border-blue-300 hover:bg-blue-50 text-blue-600 h-8 w-8 sm:h-auto sm:w-auto sm:px-3">
+                              <Button variant="outline" size="sm" className="border-border hover:bg-accent text-foreground h-8 w-8 sm:h-auto sm:w-auto sm:px-3">
                                 <Edit className="h-4 w-4" />
                                 <span className="hidden sm:inline ml-1">Edit</span>
                               </Button>
@@ -393,7 +395,7 @@ export default function ExpensesPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleDelete(expense.id)}
-                              className="border-red-300 hover:bg-red-50 text-red-600 h-8 w-8 sm:h-auto sm:w-auto sm:px-3"
+                              className="border-destructive hover:bg-destructive/10 text-destructive h-8 w-8 sm:h-auto sm:w-auto sm:px-3"
                             >
                               <Trash2 className="h-4 w-4" />
                               <span className="hidden sm:inline ml-1">Delete</span>
@@ -410,5 +412,6 @@ export default function ExpensesPage() {
         </Card>
       </main>
     </div>
+    </AppLayout>
   )
 }

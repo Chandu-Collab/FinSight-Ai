@@ -1,5 +1,3 @@
-'use client'
-
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, TrendingUp, TrendingDown, Target, Repeat, FileText, Bell } from 'lucide-react'
