@@ -130,7 +130,7 @@ export const authApi = {
 
   // Login verify OTP
   loginVerifyOtp: (data: { email: string; otp: string }) =>
-    apiRequest<{ message: string; token: string }>('/login/verify-otp', {
+    apiRequest<{ message: string; token: string; user?: { id: string; email: string; name?: string } }>('/login/verify-otp', {
       method: 'POST',
       body: JSON.stringify(data),
     }),

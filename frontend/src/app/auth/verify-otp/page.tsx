@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 export default function VerifyOtpPage() {
   const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)
+  const [isNavigating, setIsNavigating] = useState(false)
   const [email, setEmail] = useState('')
   const [type, setType] = useState('login')
   const router = useRouter()
@@ -50,15 +51,50 @@ export default function VerifyOtpPage() {
       } else {
         // Login OTP verification
         result = await authService.loginVerifyOtp({ email, otp })
-        if (result.token) {
-          toast.success('Login successful!')
+        console.log('🔍 OTP Verification Result:', result)
+        console.log('🔍 Result token:', result.token)
+        console.log('🔍 Result user:', result.user)
+        console.log('🔍 Result keys:', Object.keys(result))
+        
+        // Extract user data from JWT token if not provided in response
+        let userData = result.user
+        if (!userData && result.token) {
+          try {
+            const payload = JSON.parse(atob(result.token.split('.')[1]))
+            userData = {
+              id: payload.user_id || payload.sub || '',
+              email: payload.email || email,
+              name: payload.name || ''
+            }
+            console.log('🔍 Extracted user data from JWT:', userData)
+          } catch (error) {
+            console.error('❌ Failed to extract user from JWT:', error)
+            userData = { id: '', email: email, name: '' }
+          }
+        }
+        
+        if (result.token && userData) {
+          toast.success('Login successful! Redirecting to dashboard...')
           
-          // The AuthContext will automatically detect the token change
-          // and update the user state
+          // Store auth data immediately to prevent hydration issues
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('jwt_token', result.token)
+            localStorage.setItem('user_data', JSON.stringify(userData))
+            console.log('🔍 Auth data stored directly in localStorage')
+          }
+          
+          // Set navigation state to prevent hydration issues
+          setIsNavigating(true)
+          
+          // Navigate immediately without updating React state to prevent hydration mismatch
           setTimeout(() => {
-            router.push('/')
-            router.refresh()
-          }, 500)
+            console.log('🔍 Navigating to dashboard...')
+            window.location.href = '/' // Use direct navigation to prevent hydration issues
+          }, 2000) // Increased delay to allow auth state to settle
+        } else {
+          console.error('❌ No token or user in result:', result)
+          console.error('❌ Available keys:', Object.keys(result))
+          toast.error('Invalid OTP verification response')
         }
       }
     } catch (error: any) {
@@ -88,25 +124,38 @@ export default function VerifyOtpPage() {
 
   return (
     <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-      <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+      {/* Navigation loading overlay */}
+      {isNavigating && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-card p-6 rounded-lg shadow-lg border border-border">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <p className="text-foreground font-medium">Redirecting to dashboard...</p>
+              <p className="text-sm text-muted-foreground">Please wait while we set up your session</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <div className="bg-card py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-border">
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-foreground">
             Verify Your Email
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-muted-foreground">
             {type === 'register' 
               ? 'Complete your registration by entering the OTP sent to your email'
               : 'Enter the OTP sent to your email to complete login'
             }
           </p>
-          <p className="mt-1 text-sm font-medium text-blue-600">
+          <p className="mt-1 text-sm font-medium text-primary">
             {email}
           </p>
         </div>
 
         <form className="space-y-6" onSubmit={handleVerifyOtp}>
           <div>
-            <label htmlFor="otp" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="otp" className="block text-sm font-medium text-foreground">
               One-Time Password (OTP)
             </label>
             <div className="mt-1">
@@ -119,11 +168,11 @@ export default function VerifyOtpPage() {
                 required
                 value={otp}
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-center text-lg tracking-widest"
+                className="appearance-none block w-full px-3 py-2 border border-input rounded-md placeholder-muted-foreground text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm text-center text-lg tracking-widest bg-background"
                 placeholder="000000"
               />
             </div>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-muted-foreground">
               Enter the 6-digit code sent to your email
             </p>
           </div>
@@ -132,7 +181,7 @@ export default function VerifyOtpPage() {
             <button
               type="submit"
               disabled={loading || otp.length !== 6}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Verifying...' : 'Verify OTP'}
             </button>
@@ -143,7 +192,7 @@ export default function VerifyOtpPage() {
               type="button"
               onClick={handleResendOtp}
               disabled={loading}
-              className="text-sm text-blue-600 hover:text-blue-500 disabled:opacity-50"
+              className="text-sm text-primary hover:text-primary/80 disabled:opacity-50"
             >
               Didn't receive the code? Resend OTP
             </button>
@@ -154,7 +203,7 @@ export default function VerifyOtpPage() {
           <button
             type="button"
             onClick={() => router.back()}
-            className="text-sm text-gray-600 hover:text-gray-500"
+            className="text-sm text-muted-foreground hover:text-foreground"
           >
             ← Back to {type === 'register' ? 'Registration' : 'Login'}
           </button>

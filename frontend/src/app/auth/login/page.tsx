@@ -72,19 +72,19 @@ export default function LoginPage() {
 
   return (
     <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-      <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+      <div className="bg-card py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-border">
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-foreground">
             {autoLogin ? 'Complete Your Registration' : 'Sign in to your account'}
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-muted-foreground">
             {autoLogin 
               ? 'Enter your password to complete login and access your dashboard'
               : 'We\'ll send a verification code to your email'
             }
           </p>
           {autoLogin && (
-            <p className="mt-1 text-sm font-medium text-green-600">
+            <p className="mt-1 text-sm font-medium text-green-600 dark:text-green-400">
               ✓ Registration successful! Just enter your password below
             </p>
           )}
@@ -92,7 +92,7 @@ export default function LoginPage() {
 
         <form className="space-y-6" onSubmit={autoLogin ? handleAutoLogin : handleLogin}>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="email" className="block text-sm font-medium text-foreground">
               Email address
             </label>
             <div className="mt-1">
@@ -105,14 +105,14 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={autoLogin}
-                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="appearance-none block w-full px-3 py-2 border border-input rounded-md placeholder-muted-foreground text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm disabled:bg-muted disabled:cursor-not-allowed bg-background"
                 placeholder="Enter your email"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="password" className="block text-sm font-medium text-foreground">
               Password
             </label>
             <div className="mt-1">
@@ -124,7 +124,7 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="appearance-none block w-full px-3 py-2 border border-input rounded-md placeholder-muted-foreground text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm bg-background"
                 placeholder="Enter your password"
               />
             </div>
@@ -136,16 +136,16 @@ export default function LoginPage() {
                 id="remember-me"
                 name="remember-me"
                 type="checkbox"
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-4 w-4 text-primary focus:ring-primary border-input rounded"
               />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-foreground">
                 Remember me
               </label>
             </div>
 
             {!autoLogin && (
               <div className="text-sm">
-                <Link href="/auth/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
+                <Link href="/auth/forgot-password" className="font-medium text-primary hover:text-primary/80">
                   Forgot your password?
                 </Link>
               </div>
@@ -156,7 +156,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || (autoLogin && !password)}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading 
                 ? (autoLogin ? 'Logging in...' : 'Sending OTP...') 
@@ -169,17 +169,17 @@ export default function LoginPage() {
         <div className="mt-6">
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
+              <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or</span>
+              <span className="px-2 bg-card text-muted-foreground">Or</span>
             </div>
           </div>
 
           <div className="mt-6 text-center">
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-muted-foreground">
               Don't have an account?{' '}
-              <Link href="/auth/register" className="font-medium text-blue-600 hover:text-blue-500">
+              <Link href="/auth/register" className="font-medium text-primary hover:text-primary/80">
                 Sign up
               </Link>
             </span>

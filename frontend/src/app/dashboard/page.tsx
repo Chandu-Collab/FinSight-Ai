@@ -1,137 +1,220 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { dashboardApi, mlApi } from '@/lib/api/production'
-import toast from 'react-hot-toast'
+import { Card } from '@/components/ui/card'
+import { AppLayout } from '@/components/layout/AppLayout'
+import { 
+  DollarSign, 
+  TrendingUp, 
+  TrendingDown, 
+  PiggyBank,
+  AlertCircle,
+  Calendar,
+  Target,
+  CreditCard
+} from 'lucide-react'
+import { formatCurrency } from '@/lib/utils'
+import { IncomeChart } from '@/components/dashboard/IncomeChart'
+import { ExpenseChart } from '@/components/dashboard/ExpenseChart'
+import { BudgetProgress } from '@/components/dashboard/BudgetProgress'
+import { RecentTransactions } from '@/components/dashboard/RecentTransactions'
+import { SavingsGoals } from '@/components/dashboard/SavingsGoals'
+import { AIPredictions } from '@/components/dashboard/AIPredictions'
+
+interface DashboardStats {
+  totalIncome: number
+  totalExpenses: number
+  currentSavings: number
+  monthlyBudget: number
+  budgetUsed: number
+  recentTransactions: any[]
+  savingsGoals: any[]
+  predictions: any[]
+}
 
 export default function DashboardPage() {
-  const { user, token, isAuthenticated, logout } = useAuth()
-  const [dashboardData, setDashboardData] = useState<any>(null)
+  const { user } = useAuth()
+  console.log('🔍 Dashboard rendering with user:', user)
+  const [stats, setStats] = useState<DashboardStats>({
+    totalIncome: 0,
+    totalExpenses: 0,
+    currentSavings: 0,
+    monthlyBudget: 0,
+    budgetUsed: 0,
+    recentTransactions: [],
+    savingsGoals: [],
+    predictions: []
+  })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (isAuthenticated) {
-      loadDashboardData()
-    } else {
-      setLoading(false)
-    }
-  }, [isAuthenticated])
+    fetchDashboardData()
+  }, [user])
 
-  const loadDashboardData = async () => {
+  const fetchDashboardData = async () => {
     try {
       setLoading(true)
-      const data = await dashboardApi.getSummary()
-      setDashboardData(data)
-      console.log('✅ Dashboard data loaded:', data)
-    } catch (error: any) {
-      console.error('❌ Failed to load dashboard:', error)
-      toast.error('Failed to load dashboard data')
+      // Mock data for now - replace with actual API calls
+      const mockStats: DashboardStats = {
+        totalIncome: 8500,
+        totalExpenses: 5200,
+        currentSavings: 3300,
+        monthlyBudget: 6000,
+        budgetUsed: 5200,
+        recentTransactions: [
+          { id: 1, type: 'expense', amount: 250, category: 'Food', date: '2024-03-25', description: 'Grocery shopping' },
+          { id: 2, type: 'income', amount: 3500, source: 'Salary', date: '2024-03-24', description: 'Monthly salary' },
+          { id: 3, type: 'expense', amount: 120, category: 'Transport', date: '2024-03-23', description: 'Gas refill' },
+          { id: 4, type: 'expense', amount: 80, category: 'Entertainment', date: '2024-03-22', description: 'Movie tickets' },
+        ],
+        savingsGoals: [
+          { id: 1, title: 'Emergency Fund', target: 10000, current: 6500, deadline: '2024-12-31' },
+          { id: 2, title: 'Vacation', target: 3000, current: 1200, deadline: '2024-08-15' },
+        ],
+        predictions: [
+          { month: 'April 2024', predicted: 5500, confidence: 85 },
+          { month: 'May 2024', predicted: 5800, confidence: 75 },
+        ]
+      }
+      setStats(mockStats)
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const testProtectedAPI = async () => {
-    try {
-      const result = await mlApi.health()
-      console.log('✅ Protected API call successful:', result)
-      toast.success('API call successful!')
-    } catch (error: any) {
-      console.error('❌ Protected API call failed:', error)
-      toast.error('API call failed')
-    }
-  }
-
-  if (!isAuthenticated) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h1>
-          <p className="text-gray-600 mb-4">Please login to access the dashboard</p>
-          <a href="/auth/login" className="text-blue-600 hover:text-blue-500">
-            Go to Login
-          </a>
+      <AppLayout>
+        <div className="space-y-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-muted rounded w-1/3 mb-8"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-32 bg-muted rounded"></div>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      </AppLayout>
     )
   }
 
+  const budgetPercentage = (stats.budgetUsed / stats.monthlyBudget) * 100
+  const isOverBudget = budgetPercentage > 100
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-sm text-gray-600">Welcome back, {user?.email}</p>
+    <AppLayout>
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="pb-4">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            Welcome back, {user?.name || user?.email}!
+          </h1>
+          <p className="text-muted-foreground">Here's your financial overview for this month</p>
+        </div>
+
+        {/* 4 Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-card border-border hover:shadow-md transition-shadow">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-3">
+                <TrendingUp className="h-6 w-6 text-green-600" />
+                <span className="text-sm text-green-600 font-medium">Income</span>
+              </div>
+              <div className="text-3xl font-bold text-foreground mb-1">
+                ${stats.totalIncome.toLocaleString()}
+              </div>
+              <p className="text-sm text-muted-foreground">This month</p>
             </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={testProtectedAPI}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-              >
-                Test API
-              </button>
-              <button
-                onClick={logout}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-              >
-                Logout
-              </button>
+          </Card>
+          <Card className="bg-card border-border hover:shadow-md transition-shadow">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-3">
+                <TrendingDown className="h-6 w-6 text-red-600" />
+                <span className="text-sm text-red-600 font-medium">Expenses</span>
+              </div>
+              <div className="text-3xl font-bold text-foreground mb-1">
+                ${stats.totalExpenses.toLocaleString()}
+              </div>
+              <p className="text-sm text-muted-foreground">This month</p>
+            </div>
+          </Card>
+          <Card className="bg-card border-border hover:shadow-md transition-shadow">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-3">
+                <DollarSign className="h-6 w-6 text-blue-600" />
+                <span className="text-sm text-blue-600 font-medium">Net</span>
+              </div>
+              <div className={`text-3xl font-bold mb-1 ${stats.totalIncome - stats.totalExpenses >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                ${Math.abs(stats.totalIncome - stats.totalExpenses).toLocaleString()}
+              </div>
+              <p className="text-sm text-muted-foreground">Cash flow</p>
+            </div>
+          </Card>
+          <Card className="bg-card border-border hover:shadow-md transition-shadow">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-3">
+                <Target className="h-6 w-6 text-purple-600" />
+                <span className="text-sm text-purple-600 font-medium">Savings</span>
+              </div>
+              <div className="text-3xl font-bold text-foreground mb-1">{stats.savingsGoals.length}</div>
+              <p className="text-sm text-muted-foreground">Active goals</p>
+            </div>
+          </Card>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          {/* Left Column */}
+          <div className="xl:col-span-2 space-y-6">
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-card p-6 rounded-lg border border-border">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Income Trend</h3>
+                <IncomeChart />
+              </div>
+              <div className="bg-card p-6 rounded-lg border border-border">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Expenses by Category</h3>
+                <ExpenseChart />
+              </div>
+            </div>
+
+            {/* Budget Progress */}
+            <div className="bg-card p-6 rounded-lg border border-border">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Budget Progress</h3>
+              <BudgetProgress 
+                budgetUsed={stats.budgetUsed} 
+                budgetLimit={stats.monthlyBudget} 
+              />
+            </div>
+
+            {/* Recent Transactions */}
+            <div className="bg-card p-6 rounded-lg border border-border">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Recent Transactions</h3>
+              <RecentTransactions transactions={stats.recentTransactions} />
+            </div>
+          </div>
+
+          {/* Right Column */}
+          <div className="space-y-6">
+            {/* Savings Goals */}
+            <div className="bg-card p-6 rounded-lg border border-border">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Savings Goals</h3>
+              <SavingsGoals goals={stats.savingsGoals} />
+            </div>
+
+            {/* AI Predictions */}
+            <div className="bg-card p-6 rounded-lg border border-border">
+              <h3 className="text-lg font-semibold text-foreground mb-4">AI Predictions</h3>
+              <AIPredictions predictions={stats.predictions} />
             </div>
           </div>
         </div>
       </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-gray-600">Loading dashboard...</p>
-          </div>
-        ) : dashboardData ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-sm font-medium text-gray-500">Total Income</h3>
-              <p className="mt-2 text-3xl font-bold text-green-600">
-                ${dashboardData.total_income || 0}
-              </p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-sm font-medium text-gray-500">Total Expenses</h3>
-              <p className="mt-2 text-3xl font-bold text-red-600">
-                ${dashboardData.total_expenses || 0}
-              </p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-sm font-medium text-gray-500">Net Income</h3>
-              <p className="mt-2 text-3xl font-bold text-blue-600">
-                ${dashboardData.net_income || 0}
-              </p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-sm font-medium text-gray-500">Savings</h3>
-              <p className="mt-2 text-3xl font-bold text-purple-600">
-                ${dashboardData.total_savings || 0}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-600">No dashboard data available</p>
-          </div>
-        )}
-
-        <div className="mt-8 bg-white p-6 rounded-lg shadow">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Authentication Debug Info</h2>
-          <div className="space-y-2 text-sm">
-            <p><strong>User:</strong> {JSON.stringify(user, null, 2)}</p>
-            <p><strong>Token Present:</strong> {token ? 'Yes' : 'No'}</p>
-            <p><strong>Token Preview:</strong> {token ? token.substring(0, 50) + '...' : 'N/A'}</p>
-          </div>
-        </div>
-      </div>
-    </div>
+    </AppLayout>
   )
 }

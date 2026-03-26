@@ -321,14 +321,14 @@ export default function TransactionSearchFilter({
         {/* Search Bar */}
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
+            <Search className="h-5 w-5 text-muted-foreground" />
           </div>
           <input
             type="text"
             placeholder="Search by description, category, source, or amount..."
             value={filters.searchTerm}
             onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm"
+            className="block w-full pl-10 pr-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent sm:text-sm"
           />
         </div>
 
@@ -336,11 +336,11 @@ export default function TransactionSearchFilter({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Type Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Transaction Type</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Transaction Type</label>
             <select
               value={filters.type}
               onChange={(e) => handleFilterChange('type', e.target.value)}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm"
+              className="block w-full px-3 py-2 border border-input rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent sm:text-sm"
             >
               <option value="all">All Types</option>
               <option value="income">Income Only</option>
@@ -350,11 +350,11 @@ export default function TransactionSearchFilter({
 
           {/* Date Range Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Date Range</label>
             <select
               value={filters.dateRange}
               onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm"
+              className="block w-full px-3 py-2 border border-input rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent sm:text-sm"
             >
               <option value="all">All Time</option>
               <option value="thisMonth">This Month</option>
@@ -368,11 +368,11 @@ export default function TransactionSearchFilter({
 
           {/* Amount Range Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Amount Range</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Amount Range</label>
             <select
               value={filters.amountRange}
               onChange={(e) => handleFilterChange('amountRange', e.target.value)}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm"
+              className="block w-full px-3 py-2 border border-input rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent sm:text-sm"
             >
               <option value="all">All Amounts</option>
               <option value="under100">Under $100</option>
@@ -391,21 +391,21 @@ export default function TransactionSearchFilter({
             {filters.dateRange === 'custom' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">Start Date</label>
                   <input
                     type="date"
                     value={filters.customStartDate}
                     onChange={(e) => handleFilterChange('customStartDate', e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm"
+                    className="block w-full px-3 py-2 border border-input rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent sm:text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">End Date</label>
                   <input
                     type="date"
                     value={filters.customEndDate}
                     onChange={(e) => handleFilterChange('customEndDate', e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm"
+                    className="block w-full px-3 py-2 border border-input rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent sm:text-sm"
                   />
                 </div>
               </div>
@@ -414,32 +414,32 @@ export default function TransactionSearchFilter({
             {/* Custom Amount Range */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Min Amount</label>
+                <label className="block text-sm font-medium text-foreground mb-2">Min Amount</label>
                 <div className="relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-500 sm:text-sm">$</span>
+                    <span className="text-muted-foreground sm:text-sm">$</span>
                   </div>
                   <input
                     type="number"
                     placeholder="0.00"
                     value={filters.minAmount}
                     onChange={(e) => handleFilterChange('minAmount', e.target.value)}
-                    className="block w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm"
+                    className="block w-full pl-8 pr-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent sm:text-sm"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Max Amount</label>
+                <label className="block text-sm font-medium text-foreground mb-2">Max Amount</label>
                 <div className="relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-500 sm:text-sm">$</span>
+                    <span className="text-muted-foreground sm:text-sm">$</span>
                   </div>
                   <input
                     type="number"
                     placeholder="0.00"
                     value={filters.maxAmount}
                     onChange={(e) => handleFilterChange('maxAmount', e.target.value)}
-                    className="block w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm"
+                    className="block w-full pl-8 pr-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent sm:text-sm"
                   />
                 </div>
               </div>
@@ -447,7 +447,7 @@ export default function TransactionSearchFilter({
 
             {/* Categories Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Categories</label>
+              <label className="block text-sm font-medium text-foreground mb-2">Categories</label>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
                 {expenseCategories.map((category) => (
                   <button
@@ -457,7 +457,7 @@ export default function TransactionSearchFilter({
                     className={`px-3 py-2 text-xs rounded-lg transition-colors ${
                       filters.categories.includes(category)
                         ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                        : 'bg-muted hover:bg-accent text-foreground'
                     }`}
                   >
                     {category}
@@ -468,7 +468,7 @@ export default function TransactionSearchFilter({
 
             {/* Sources Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Sources</label>
+              <label className="block text-sm font-medium text-foreground mb-2">Sources</label>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                 {incomeSources.map((source) => (
                   <button
@@ -478,7 +478,7 @@ export default function TransactionSearchFilter({
                     className={`px-3 py-2 text-xs rounded-lg transition-colors ${
                       filters.sources.includes(source)
                         ? 'bg-green-100 text-green-800 border border-green-300'
-                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                        : 'bg-muted hover:bg-accent text-foreground'
                     }`}
                   >
                     {source}
@@ -490,11 +490,11 @@ export default function TransactionSearchFilter({
             {/* Sort Options */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                <label className="block text-sm font-medium text-foreground mb-2">Sort By</label>
                 <select
                   value={filters.sortBy}
                   onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm"
+                  className="block w-full px-3 py-2 border border-input rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent sm:text-sm"
                 >
                   <option value="date">Date</option>
                   <option value="amount">Amount</option>
@@ -502,11 +502,11 @@ export default function TransactionSearchFilter({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Sort Order</label>
+                <label className="block text-sm font-medium text-foreground mb-2">Sort Order</label>
                 <select
                   value={filters.sortOrder}
                   onChange={(e) => handleFilterChange('sortOrder', e.target.value)}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm"
+                  className="block w-full px-3 py-2 border border-input rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent sm:text-sm"
                 >
                   <option value="desc">Newest First</option>
                   <option value="asc">Oldest First</option>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { AppLayout } from '@/components/layout/AppLayout'
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -130,19 +131,20 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading analytics...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground font-medium">Loading analytics...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50">
+    <AppLayout>
+      <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
       {/* Modern Header */}
-      <header className="bg-white/80 backdrop-blur-lg shadow-sm border-b border-gray-200/50 sticky top-0 z-50">
+      <header className="bg-card/80 backdrop-blur-lg shadow-sm border-b border-border/50 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-3 sm:py-4">
             <div className="flex items-center space-x-2 sm:space-x-4">
@@ -153,14 +155,14 @@ export default function AnalyticsPage() {
                 <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                   Analytics & Reports
                 </h1>
-                <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">Deep insights into your financial data</p>
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Deep insights into your financial data</p>
               </div>
             </div>
             <div className="flex space-x-2 sm:space-x-3">
               <select
                 value={selectedTimeRange}
                 onChange={(e) => setSelectedTimeRange(e.target.value)}
-                className="px-3 sm:px-4 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
+                className="px-3 sm:px-4 py-2 border border-input rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
               >
                 {timeRanges.map((range) => (
                   <option key={range.value} value={range.value}>
@@ -168,7 +170,7 @@ export default function AnalyticsPage() {
                   </option>
                 ))}
               </select>
-              <Button variant="outline" className="border-gray-300 hover:bg-gray-50">
+              <Button variant="outline" className="border-border hover:bg-accent">
                 <Download className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Export</span>
               </Button>
@@ -181,9 +183,9 @@ export default function AnalyticsPage() {
       <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Key Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <Card className="bg-white/80 backdrop-blur-sm border-2 border-green-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="bg-card/80 backdrop-blur-sm border-2 border-green-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Net Savings</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Net Savings</CardTitle>
               <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
                 <TrendingUp className="h-4 w-4 text-white" />
               </div>
@@ -192,7 +194,7 @@ export default function AnalyticsPage() {
               <div className="text-2xl sm:text-3xl font-bold text-green-600">
                 ${analyticsData?.netSavings.toLocaleString()}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 {analyticsData?.savingsRate.toFixed(1)}% savings rate
               </p>
               <div className="mt-3 flex items-center text-sm">
@@ -202,9 +204,9 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/80 backdrop-blur-sm border-2 border-blue-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="bg-card/80 backdrop-blur-sm border-2 border-blue-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Total Income</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Income</CardTitle>
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
                 <DollarSign className="h-4 w-4 text-white" />
               </div>
@@ -213,7 +215,7 @@ export default function AnalyticsPage() {
               <div className="text-2xl sm:text-3xl font-bold text-blue-600">
                 ${analyticsData?.totalIncome.toLocaleString()}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 From all sources
               </p>
               <div className="mt-3 flex items-center text-sm">
@@ -223,9 +225,9 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/80 backdrop-blur-sm border-2 border-orange-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="bg-card/80 backdrop-blur-sm border-2 border-orange-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Total Expenses</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Expenses</CardTitle>
               <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center">
                 <ShoppingCart className="h-4 w-4 text-white" />
               </div>
@@ -234,7 +236,7 @@ export default function AnalyticsPage() {
               <div className="text-2xl sm:text-3xl font-bold text-orange-600">
                 ${analyticsData?.totalExpenses.toLocaleString()}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 {analyticsData?.transactionCount} transactions
               </p>
               <div className="mt-3 flex items-center text-sm">
@@ -244,9 +246,9 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/80 backdrop-blur-sm border-2 border-purple-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="bg-card/80 backdrop-blur-sm border-2 border-purple-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Health Score</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Health Score</CardTitle>
               <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
                 <Target className="h-4 w-4 text-white" />
               </div>
@@ -255,7 +257,7 @@ export default function AnalyticsPage() {
               <div className="text-2xl sm:text-3xl font-bold text-purple-600">
                 {analyticsData?.financialHealthScore}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Financial health
               </p>
               <div className="mt-3">
@@ -270,30 +272,30 @@ export default function AnalyticsPage() {
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {/* Monthly Trend Chart */}
-          <Card className="bg-white/80 backdrop-blur-sm border-2 border-gray-200/50 shadow-lg">
+          <Card className="bg-card/80 backdrop-blur-sm border-2 border-border/50 shadow-lg">
             <CardHeader className="flex flex-row items-center justify-between pb-4">
-              <CardTitle className="text-lg font-semibold text-gray-800">Monthly Trend</CardTitle>
-              <Button variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50">
+              <CardTitle className="text-lg font-semibold text-foreground">Monthly Trend</CardTitle>
+              <Button variant="outline" size="sm" className="border-border hover:bg-accent">
                 <Eye className="h-4 w-4 mr-2" />
                 View Details
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="h-64 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-xl">
+              <div className="h-64 flex items-center justify-center border-2 border-dashed border-border rounded-xl">
                 <div className="text-center">
-                  <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 font-medium">Monthly Trend Chart</p>
-                  <p className="text-sm text-gray-500 mt-2">Income vs Expenses over time</p>
+                  <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground font-medium">Monthly Trend Chart</p>
+                  <p className="text-sm text-muted-foreground mt-2">Income vs Expenses over time</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Category Breakdown */}
-          <Card className="bg-white/80 backdrop-blur-sm border-2 border-gray-200/50 shadow-lg">
+          <Card className="bg-card/80 backdrop-blur-sm border-2 border-border/50 shadow-lg">
             <CardHeader className="flex flex-row items-center justify-between pb-4">
-              <CardTitle className="text-lg font-semibold text-gray-800">Category Breakdown</CardTitle>
-              <Button variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50">
+              <CardTitle className="text-lg font-semibold text-foreground">Category Breakdown</CardTitle>
+              <Button variant="outline" size="sm" className="border-border hover:bg-accent">
                 <PieChart className="h-4 w-4 mr-2" />
                 View Details
               </Button>
@@ -304,16 +306,16 @@ export default function AnalyticsPage() {
                   <div key={index} className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <span className="text-lg">{categoryIcons[category.category]}</span>
-                      <span className="text-sm font-medium text-gray-700">{category.category}</span>
+                      <span className="text-sm font-medium text-foreground">{category.category}</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <div className="w-24 bg-gray-200 rounded-full h-2">
+                      <div className="w-24 bg-muted rounded-full h-2">
                         <div 
                           className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full"
                           style={{ width: `${category.percentage}%` }}
                         />
                       </div>
-                      <span className="text-sm font-semibold text-gray-900 w-12 text-right">
+                      <span className="text-sm font-semibold text-foreground w-12 text-right">
                         {category.percentage}%
                       </span>
                     </div>
@@ -327,25 +329,25 @@ export default function AnalyticsPage() {
         {/* Detailed Analytics */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Top Spending Categories */}
-          <Card className="bg-white/80 backdrop-blur-sm border-2 border-gray-200/50 shadow-lg">
+          <Card className="bg-card/80 backdrop-blur-sm border-2 border-border/50 shadow-lg">
             <CardHeader className="pb-4">
-              <CardTitle className="text-lg font-semibold text-gray-800">Top Categories</CardTitle>
+              <CardTitle className="text-lg font-semibold text-foreground">Top Categories</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {analyticsData?.categoryBreakdown.slice(0, 5).map((category, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                  <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-xl">
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center">
                         <span className="text-sm">{categoryIcons[category.category]}</span>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{category.category}</p>
-                        <p className="text-xs text-gray-500">{category.percentage}% of total</p>
+                        <p className="text-sm font-medium text-foreground">{category.category}</p>
+                        <p className="text-xs text-muted-foreground">{category.percentage}% of total</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-bold text-gray-900">${category.amount.toLocaleString()}</p>
+                      <p className="text-sm font-bold text-foreground">${category.amount.toLocaleString()}</p>
                     </div>
                   </div>
                 ))}
@@ -354,9 +356,9 @@ export default function AnalyticsPage() {
           </Card>
 
           {/* Financial Insights */}
-          <Card className="bg-white/80 backdrop-blur-sm border-2 border-gray-200/50 shadow-lg">
+          <Card className="bg-card/80 backdrop-blur-sm border-2 border-border/50 shadow-lg">
             <CardHeader className="pb-4">
-              <CardTitle className="text-lg font-semibold text-gray-800">Key Insights</CardTitle>
+              <CardTitle className="text-lg font-semibold text-foreground">Key Insights</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -392,9 +394,9 @@ export default function AnalyticsPage() {
           </Card>
 
           {/* Quick Actions */}
-          <Card className="bg-white/80 backdrop-blur-sm border-2 border-gray-200/50 shadow-lg">
+          <Card className="bg-card/80 backdrop-blur-sm border-2 border-border/50 shadow-lg">
             <CardHeader className="pb-4">
-              <CardTitle className="text-lg font-semibold text-gray-800">Quick Actions</CardTitle>
+              <CardTitle className="text-lg font-semibold text-foreground">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -402,15 +404,15 @@ export default function AnalyticsPage() {
                   <FileText className="h-4 w-4 mr-2" />
                   Generate Report
                 </Button>
-                <Button variant="outline" className="w-full border-gray-300 hover:bg-gray-50">
+                <Button variant="outline" className="w-full border-border hover:bg-accent">
                   <Download className="h-4 w-4 mr-2" />
                   Export Data
                 </Button>
-                <Button variant="outline" className="w-full border-gray-300 hover:bg-gray-50">
+                <Button variant="outline" className="w-full border-border hover:bg-accent">
                   <Filter className="h-4 w-4 mr-2" />
                   Advanced Filters
                 </Button>
-                <Button variant="outline" className="w-full border-gray-300 hover:bg-gray-50">
+                <Button variant="outline" className="w-full border-border hover:bg-accent">
                   <Calendar className="h-4 w-4 mr-2" />
                   Schedule Reports
                 </Button>
@@ -420,5 +422,6 @@ export default function AnalyticsPage() {
         </div>
       </main>
     </div>
+    </AppLayout>
   )
 }

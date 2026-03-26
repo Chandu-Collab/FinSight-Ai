@@ -18,6 +18,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>
   logout: () => void
   refreshToken: () => Promise<void>
+  setAuthState: (token: string, user: User) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -99,6 +100,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
+  const setAuthState = (token: string, user: User) => {
+    console.log('🔍 setAuthState called with:', { token, user })
+    
+    // Update React state first
+    setToken(token)
+    setUser(user)
+    
+    // Then store in localStorage (this prevents hydration issues)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('jwt_token', token)
+      localStorage.setItem('user_data', JSON.stringify(user))
+      console.log('🔍 Auth state updated and stored in localStorage')
+    }
+  }
+
   const value: AuthContextType = {
     user,
     token,
@@ -107,6 +123,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     login,
     logout,
     refreshToken,
+    setAuthState,
   }
 
   return (

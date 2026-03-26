@@ -194,14 +194,14 @@ export default function RecurringTransactionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-card shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Recurring Transactions</h1>
-              <p className="text-sm text-gray-500">Manage your automatic recurring income and expenses</p>
+              <h1 className="text-2xl font-bold text-foreground">Recurring Transactions</h1>
+              <p className="text-sm text-muted-foreground">Manage your automatic recurring income and expenses</p>
             </div>
             <Link href="/recurring/create">
               <Button className="flex items-center space-x-2">
@@ -351,12 +351,12 @@ export default function RecurringTransactionsPage() {
             {filteredTransactions.length === 0 ? (
               <div className="text-center py-12">
                 <div className="flex justify-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-                    <Repeat className="h-8 w-8 text-gray-400" />
+                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                    <Repeat className="h-8 w-8 text-muted-foreground" />
                   </div>
                 </div>
-                <h3 className="mt-4 text-lg font-medium text-gray-900">No recurring transactions found</h3>
-                <p className="mt-2 text-sm text-gray-500">
+                <h3 className="mt-4 text-lg font-medium text-foreground">No recurring transactions found</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
                   Create your first recurring transaction to automate your finances.
                 </p>
                 <div className="mt-6">
@@ -374,7 +374,7 @@ export default function RecurringTransactionsPage() {
                   <div
                     key={transaction.id}
                     className={`border rounded-lg p-4 ${
-                      transaction.isOverdue ? 'border-red-200 bg-red-50' : 'hover:bg-gray-50'
+                      transaction.isOverdue ? 'border-destructive bg-destructive/10' : 'hover:bg-muted'
                     } transition-colors`}
                   >
                     <div className="flex items-center justify-between">
@@ -480,12 +480,12 @@ export default function RecurringTransactionsPage() {
                               {transaction.current_occurrence}/{transaction.count_occurrences}
                             </span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="w-full bg-muted rounded-full h-2">
                             <div
                               className={`h-2 rounded-full ${
                                 transaction.progressPercentage >= 100 ? 'bg-green-500' :
                                 transaction.progressPercentage >= 75 ? 'bg-blue-500' :
-                                transaction.progressPercentage >= 50 ? 'bg-yellow-500' : 'bg-gray-300'
+                                transaction.progressPercentage >= 50 ? 'bg-yellow-500' : 'bg-muted'
                               }`}
                               style={{ width: `${Math.min(transaction.progressPercentage, 100)}%` }}
                             ></div>
@@ -508,7 +508,7 @@ export default function RecurringTransactionsPage() {
                         <p className="text-sm text-gray-600">
                           {transaction.isOverdue ? 'Overdue by' : 'Next in'}
                         </p>
-                        <p className={`text-sm font-medium ${transaction.isOverdue ? 'text-red-600' : 'text-gray-900'}`}>
+                        <p className={`text-sm font-medium ${transaction.isOverdue ? 'text-destructive' : 'text-foreground'}`}>
                           {Math.abs(transaction.daysUntilNext)} days
                           {transaction.isOverdue ? ' ago' : ''}
                         </p>
@@ -517,8 +517,8 @@ export default function RecurringTransactionsPage() {
 
                     {/* Description */}
                     {transaction.description && (
-                      <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                        <p className="text-sm text-gray-600">{transaction.description}</p>
+                      <div className="mt-3 p-3 bg-muted rounded-lg">
+                        <p className="text-sm text-muted-foreground">{transaction.description}</p>
                       </div>
                     )}
                   </div>

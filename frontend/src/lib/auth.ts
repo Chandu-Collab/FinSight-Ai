@@ -37,6 +37,7 @@ export interface VerifyOtpData {
 export interface AuthResponse {
   message: string
   token?: string
+  user?: User
 }
 
 export interface User {
@@ -115,6 +116,10 @@ class AuthService {
 
   // Login verify OTP and get JWT token
   async loginVerifyOtp(data: VerifyOtpData): Promise<AuthResponse> {
+    console.log('🔍 authService.loginVerifyOtp Debug:')
+    console.log('  Data:', data)
+    console.log('  API URL:', `${config.baseUrl}/api/login/verify-otp`)
+    
     const response = await fetch(`${config.baseUrl}/api/login/verify-otp`, {
       method: 'POST',
       headers: {
@@ -123,19 +128,31 @@ class AuthService {
       body: JSON.stringify(data),
     })
 
+    console.log('🔍 Response Status:', response.status)
+    console.log('🔍 Response Headers:', Object.fromEntries(response.headers.entries()))
+
     if (!response.ok) {
       const error = await response.json()
+      console.error('❌ Error Response:', error)
       throw new Error(error.error || 'OTP verification failed')
     }
 
     const result: AuthResponse = await response.json()
+    console.log('🔍 Response Body:', result)
     
-    // Store JWT token if provided
+    // Store JWT token and user data if provided
     if (result.token) {
-      this.setToken(result.token, { id: '', email: data.email })
+      // Use the user data from the response if available, otherwise create a basic user object
+      const userData = result.user || { id: '', email: data.email, name: '' }
+      this.setToken(result.token, userData)
+      console.log('✅ Token and user stored successfully:', { token: result.token, user: userData })
+      
+      // Return the complete result with user data
+      return result
+    } else {
+      console.error('❌ No token in response:', result)
+      return result
     }
-    
-    return result
   }
 
   // Logout user
