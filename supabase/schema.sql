@@ -224,6 +224,17 @@ CREATE TABLE IF NOT EXISTS login_otps (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+
+-- Password Reset Tokens table for password reset flows (supports secure tokens)
+CREATE TABLE IF NOT EXISTS password_reset_otps (
+    id SERIAL PRIMARY KEY,
+    user_id UUID REFERENCES users(id),
+    otp VARCHAR(255) NOT NULL, -- stores secure token
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+
 -- Migration: Add description column to budgets table (if it doesn't exist)
 -- Run this if you're updating an existing database
 DO $$

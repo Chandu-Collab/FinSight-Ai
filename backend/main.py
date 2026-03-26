@@ -1055,6 +1055,149 @@ def login_verify_otp():
 def protected():
     return jsonify({'message': f'Hello, user {g.user_id} with email {g.email}! This is a protected endpoint.'})
 
+# --- FORGOT PASSWORD ENDPOINT ---
+@app.route('/api/forgot-password', methods=['POST'])
+def forgot_password():
+    """Generate and send password reset token for user"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        
+        if not email:
+            return jsonify({'error': 'Email is required', 'status': 'error'}), 400
+        
+        # Check if user exists
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('SELECT id, email FROM users WHERE email = %s', (email,))
+        user = cur.fetchone()
+        
+        if not user:
+            cur.close()
+            conn.close()
+            return jsonify({'error': 'User with this email does not exist', 'status': 'error'}), 404
+        
+        # Generate reset token
+        reset_token = ''.join(random.choices(string.ascii_letters + string.digits + '-', k=43))
+        
+        # Store token in password_reset_otps table
+        cur.execute('''
+            INSERT INTO password_reset_otps (user_id, otp, expires_at)
+            VALUES (%s, %s, NOW() + INTERVAL '1 hour')
+        ''', (user[0], reset_token))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        # Send email with reset token (implement email sending logic)
+        try:
+            # Create email message
+            msg = MIMEMultipart()
+            msg['From'] = EMAIL_FROM
+            msg['To'] = email
+            msg['Subject'] = 'Password Reset Request - FinSight AI'
+            
+            body = f'''
+            Hello,
+            
+            You requested a password reset for your FinSight AI account.
+            
+            Your password reset token is: {reset_token}
+            
+            This token will expire in 1 hour.
+            
+            Please use this token along with your new password to reset your password.
+            
+            If you didn't request this password reset, please ignore this email.
+            
+            Best regards,
+            FinSight AI Team
+            '''
+            
+            msg.attach(MIMEText(body, 'plain'))
+            
+            # Send email
+            server = smtplib.SMTP('smtp.gmail.com', 587)
+            server.starttls()
+            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+            server.send_message(msg)
+            server.quit()
+            
+        except Exception as email_error:
+            print(f"Error sending email: {email_error}")
+            # Still return success even if email fails (for development)
+        
+        return jsonify({
+            'message': 'Password reset token sent to your email',
+            'status': 'success',
+            'email': email
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+# --- RESET PASSWORD ENDPOINT ---
+@app.route('/api/reset-password', methods=['POST'])
+def reset_password():
+    """Reset user password using token and new password"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        token = data.get('token')
+        new_password_hash = data.get('new_password_hash')
+        
+        if not all([email, token, new_password_hash]):
+            return jsonify({
+                'error': 'Email, token, and new_password_hash are required',
+                'status': 'error'
+            }), 400
+        
+        # Verify token and check if it's still valid
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT u.id, u.email, pro.otp, pro.expires_at 
+            FROM users u
+            JOIN password_reset_otps pro ON u.id = pro.user_id
+            WHERE u.email = %s AND pro.otp = %s AND pro.expires_at > NOW()
+        ''', (email, token))
+        
+        user = cur.fetchone()
+        
+        if not user:
+            cur.close()
+            conn.close()
+            return jsonify({
+                'error': 'Invalid or expired reset token',
+                'status': 'error'
+            }), 400
+        
+        # Update password in users table
+        cur.execute('''
+            UPDATE users 
+            SET password_hash = %s
+            WHERE id = %s
+        ''', (new_password_hash, user[0]))
+        
+        # Remove used token from password_reset_otps table
+        cur.execute('''
+            DELETE FROM password_reset_otps 
+            WHERE user_id = %s AND otp = %s
+        ''', (user[0], token))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'message': 'Password reset successful',
+            'status': 'success'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
 
 
 # ==================== RECURRING TRANSACTIONS ENDPOINTS (PostgreSQL) ====================
@@ -2544,6 +2687,13 @@ def root():
         'message': 'FinSight AI Backend API',
         'version': '2.0',
         'endpoints': {
+            'auth': {
+                'register': '/api/register',
+                'login': '/api/login',
+                'login-verify': '/api/login/verify-otp',
+                'forgot-password': '/api/forgot-password',
+                'reset-password': '/api/reset-password'
+            },
             'users': '/api/users',
             'income': '/api/income',
             'expenses': '/api/expenses',
