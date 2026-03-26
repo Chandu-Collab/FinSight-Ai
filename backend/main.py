@@ -1204,6 +1204,137 @@ def reset_password():
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 
+# ==================== USERS CRUD ENDPOINTS (PostgreSQL) ====================
+@app.route('/api/users', methods=['GET'])
+@jwt_required
+def get_all_users():
+    """Get all users (admin only endpoint)"""
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, email, name, phone_number, date_of_birth, gender, email_verified, created_at, updated_at
+            FROM users 
+            ORDER BY created_at DESC
+        ''')
+        rows = cur.fetchall()
+        columns = ['id', 'email', 'name', 'phone_number', 'date_of_birth', 'gender', 'email_verified', 'created_at', 'updated_at']
+        users = [dict(zip(columns, row)) for row in rows]
+        cur.close()
+        conn.close()
+        return jsonify({'data': users, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/users/<user_id>', methods=['GET'])
+@jwt_required
+def get_user_by_id(user_id):
+    """Get user by ID"""
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, email, name, phone_number, date_of_birth, gender, email_verified, created_at, updated_at
+            FROM users 
+            WHERE id = %s
+        ''', (user_id,))
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if not row:
+            return jsonify({'error': 'User not found', 'status': 'error'}), 404
+            
+        columns = ['id', 'email', 'name', 'phone_number', 'date_of_birth', 'gender', 'email_verified', 'created_at', 'updated_at']
+        user = dict(zip(columns, row))
+        return jsonify({'data': user, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/users/<user_id>', methods=['PUT'])
+@jwt_required
+def update_user(user_id):
+    """Update user by ID"""
+    try:
+        data = request.get_json()
+        now = datetime.datetime.now()
+        conn = get_db_conn()
+        cur = conn.cursor()
+        
+        # Check if user exists
+        cur.execute('SELECT id FROM users WHERE id = %s', (user_id,))
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return jsonify({'error': 'User not found', 'status': 'error'}), 404
+        
+        # Build dynamic update query
+        allowed_fields = ['name', 'phone_number', 'date_of_birth', 'gender', 'email_verified']
+        update_clauses = []
+        values = []
+        
+        for field in allowed_fields:
+            if field in data:
+                update_clauses.append(f"{field} = %s")
+                values.append(data[field])
+        
+        if not update_clauses:
+            cur.close()
+            conn.close()
+            return jsonify({'error': 'No valid fields to update', 'status': 'error'}), 400
+        
+        update_clauses.append("updated_at = %s")
+        values.append(now)
+        values.append(user_id)
+        
+        update_query = f'''
+            UPDATE users 
+            SET {', '.join(update_clauses)} 
+            WHERE id = %s 
+            RETURNING id, email, name, phone_number, date_of_birth, gender, email_verified, created_at, updated_at
+        '''
+        
+        cur.execute(update_query, values)
+        updated_row = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        columns = ['id', 'email', 'name', 'phone_number', 'date_of_birth', 'gender', 'email_verified', 'created_at', 'updated_at']
+        updated_user = dict(zip(columns, updated_row))
+        return jsonify({'data': updated_user, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/users/<user_id>', methods=['DELETE'])
+@jwt_required
+def delete_user(user_id):
+    """Delete user by ID"""
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        
+        # Check if user exists
+        cur.execute('SELECT id FROM users WHERE id = %s', (user_id,))
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return jsonify({'error': 'User not found', 'status': 'error'}), 404
+        
+        # Delete user (cascade delete will handle related records)
+        cur.execute('DELETE FROM users WHERE id = %s RETURNING id', (user_id,))
+        deleted_id = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'message': f'User {deleted_id[0]} deleted successfully',
+            'status': 'success'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
 
 # ==================== RECURRING TRANSACTIONS ENDPOINTS (PostgreSQL) ====================
 @app.route('/api/recurring-transactions', methods=['GET'])
@@ -2696,10 +2827,16 @@ def root():
                 'register': '/api/register',
                 'login': '/api/login',
                 'login-verify': '/api/login/verify-otp',
+                'verify-email': '/api/users/verify-email',
                 'forgot-password': '/api/forgot-password',
                 'reset-password': '/api/reset-password'
             },
-            'users': '/api/users',
+            'users': {
+                'get_all': '/api/users',
+                'get_by_id': '/api/users/<user_id>',
+                'update': '/api/users/<user_id>',
+                'delete': '/api/users/<user_id>'
+            },
             'income': '/api/income',
             'expenses': '/api/expenses',
             'budgets': '/api/budgets',
