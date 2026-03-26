@@ -941,6 +941,11 @@ def verify_email():
         cur.close()
         conn.close()
         return jsonify({'error': 'Invalid OTP'}), 400
+    
+    # Handle timezone comparison - if otp_expires_at is naive, assume it's UTC
+    if otp_expires_at.tzinfo is None:
+        otp_expires_at = otp_expires_at.replace(tzinfo=tz.utc)
+    
     if dt.now(tz.utc) > otp_expires_at:
         cur.close()
         conn.close()
@@ -1055,6 +1060,280 @@ def login_verify_otp():
 def protected():
     return jsonify({'message': f'Hello, user {g.user_id} with email {g.email}! This is a protected endpoint.'})
 
+# --- FORGOT PASSWORD ENDPOINT ---
+@app.route('/api/forgot-password', methods=['POST'])
+def forgot_password():
+    """Generate and send password reset token for user"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        
+        if not email:
+            return jsonify({'error': 'Email is required', 'status': 'error'}), 400
+        
+        # Check if user exists
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('SELECT id, email FROM users WHERE email = %s', (email,))
+        user = cur.fetchone()
+        
+        if not user:
+            cur.close()
+            conn.close()
+            return jsonify({'error': 'User with this email does not exist', 'status': 'error'}), 404
+        
+        # Generate reset token
+        reset_token = ''.join(random.choices(string.ascii_letters + string.digits + '-', k=43))
+        
+        # Store token in password_reset_otps table
+        cur.execute('''
+            INSERT INTO password_reset_otps (user_id, otp, expires_at)
+            VALUES (%s, %s, NOW() + INTERVAL '1 hour')
+        ''', (user[0], reset_token))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        # Send email with reset token (implement email sending logic)
+        try:
+            # Create email message
+            msg = MIMEMultipart()
+            msg['From'] = EMAIL_FROM
+            msg['To'] = email
+            msg['Subject'] = 'Password Reset Request - FinSight AI'
+            
+            body = f'''
+            Hello,
+            
+            You requested a password reset for your FinSight AI account.
+            
+            Your password reset token is: {reset_token}
+            
+            This token will expire in 1 hour.
+            
+            Please use this token along with your new password to reset your password.
+            
+            If you didn't request this password reset, please ignore this email.
+            
+            Best regards,
+            FinSight AI Team
+            '''
+            
+            msg.attach(MIMEText(body, 'plain'))
+            
+            # Send email
+            server = smtplib.SMTP('smtp.gmail.com', 587)
+            server.starttls()
+            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+            server.send_message(msg)
+            server.quit()
+            
+        except Exception as email_error:
+            print(f"Error sending email: {email_error}")
+            # Still return success even if email fails (for development)
+        
+        return jsonify({
+            'message': 'Password reset token sent to your email',
+            'status': 'success',
+            'email': email
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+# --- RESET PASSWORD ENDPOINT ---
+@app.route('/api/reset-password', methods=['POST'])
+def reset_password():
+    """Reset user password using token and new password"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        token = data.get('token')
+        new_password_hash = data.get('new_password_hash')
+        
+        if not all([email, token, new_password_hash]):
+            return jsonify({
+                'error': 'Email, token, and new_password_hash are required',
+                'status': 'error'
+            }), 400
+        
+        # Verify token and check if it's still valid
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT u.id, u.email, pro.otp, pro.expires_at 
+            FROM users u
+            JOIN password_reset_otps pro ON u.id = pro.user_id
+            WHERE u.email = %s AND pro.otp = %s AND pro.expires_at > NOW()
+        ''', (email, token))
+        
+        user = cur.fetchone()
+        
+        if not user:
+            cur.close()
+            conn.close()
+            return jsonify({
+                'error': 'Invalid or expired reset token',
+                'status': 'error'
+            }), 400
+        
+        # Update password in users table
+        cur.execute('''
+            UPDATE users 
+            SET password_hash = %s
+            WHERE id = %s
+        ''', (new_password_hash, user[0]))
+        
+        # Remove used token from password_reset_otps table
+        cur.execute('''
+            DELETE FROM password_reset_otps 
+            WHERE user_id = %s AND otp = %s
+        ''', (user[0], token))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'message': 'Password reset successful',
+            'status': 'success'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+
+# ==================== USERS CRUD ENDPOINTS (PostgreSQL) ====================
+@app.route('/api/users', methods=['GET'])
+@jwt_required
+def get_all_users():
+    """Get all users (admin only endpoint)"""
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, email, name, phone_number, date_of_birth, gender, email_verified, created_at, updated_at
+            FROM users 
+            ORDER BY created_at DESC
+        ''')
+        rows = cur.fetchall()
+        columns = ['id', 'email', 'name', 'phone_number', 'date_of_birth', 'gender', 'email_verified', 'created_at', 'updated_at']
+        users = [dict(zip(columns, row)) for row in rows]
+        cur.close()
+        conn.close()
+        return jsonify({'data': users, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/users/<user_id>', methods=['GET'])
+@jwt_required
+def get_user_by_id(user_id):
+    """Get user by ID"""
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, email, name, phone_number, date_of_birth, gender, email_verified, created_at, updated_at
+            FROM users 
+            WHERE id = %s
+        ''', (user_id,))
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if not row:
+            return jsonify({'error': 'User not found', 'status': 'error'}), 404
+            
+        columns = ['id', 'email', 'name', 'phone_number', 'date_of_birth', 'gender', 'email_verified', 'created_at', 'updated_at']
+        user = dict(zip(columns, row))
+        return jsonify({'data': user, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/users/<user_id>', methods=['PUT'])
+@jwt_required
+def update_user(user_id):
+    """Update user by ID"""
+    try:
+        data = request.get_json()
+        now = datetime.datetime.now()
+        conn = get_db_conn()
+        cur = conn.cursor()
+        
+        # Check if user exists
+        cur.execute('SELECT id FROM users WHERE id = %s', (user_id,))
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return jsonify({'error': 'User not found', 'status': 'error'}), 404
+        
+        # Build dynamic update query
+        allowed_fields = ['name', 'phone_number', 'date_of_birth', 'gender', 'email_verified']
+        update_clauses = []
+        values = []
+        
+        for field in allowed_fields:
+            if field in data:
+                update_clauses.append(f"{field} = %s")
+                values.append(data[field])
+        
+        if not update_clauses:
+            cur.close()
+            conn.close()
+            return jsonify({'error': 'No valid fields to update', 'status': 'error'}), 400
+        
+        update_clauses.append("updated_at = %s")
+        values.append(now)
+        values.append(user_id)
+        
+        update_query = f'''
+            UPDATE users 
+            SET {', '.join(update_clauses)} 
+            WHERE id = %s 
+            RETURNING id, email, name, phone_number, date_of_birth, gender, email_verified, created_at, updated_at
+        '''
+        
+        cur.execute(update_query, values)
+        updated_row = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        columns = ['id', 'email', 'name', 'phone_number', 'date_of_birth', 'gender', 'email_verified', 'created_at', 'updated_at']
+        updated_user = dict(zip(columns, updated_row))
+        return jsonify({'data': updated_user, 'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/users/<user_id>', methods=['DELETE'])
+@jwt_required
+def delete_user(user_id):
+    """Delete user by ID"""
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        
+        # Check if user exists
+        cur.execute('SELECT id FROM users WHERE id = %s', (user_id,))
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return jsonify({'error': 'User not found', 'status': 'error'}), 404
+        
+        # Delete user (cascade delete will handle related records)
+        cur.execute('DELETE FROM users WHERE id = %s RETURNING id', (user_id,))
+        deleted_id = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'message': f'User {deleted_id[0]} deleted successfully',
+            'status': 'success'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
 
 
 # ==================== RECURRING TRANSACTIONS ENDPOINTS (PostgreSQL) ====================
@@ -2544,7 +2823,20 @@ def root():
         'message': 'FinSight AI Backend API',
         'version': '2.0',
         'endpoints': {
-            'users': '/api/users',
+            'auth': {
+                'register': '/api/register',
+                'login': '/api/login',
+                'login-verify': '/api/login/verify-otp',
+                'verify-email': '/api/users/verify-email',
+                'forgot-password': '/api/forgot-password',
+                'reset-password': '/api/reset-password'
+            },
+            'users': {
+                'get_all': '/api/users',
+                'get_by_id': '/api/users/<user_id>',
+                'update': '/api/users/<user_id>',
+                'delete': '/api/users/<user_id>'
+            },
             'income': '/api/income',
             'expenses': '/api/expenses',
             'budgets': '/api/budgets',

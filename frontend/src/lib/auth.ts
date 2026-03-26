@@ -34,6 +34,16 @@ export interface VerifyOtpData {
   otp: string
 }
 
+export interface ForgotPasswordData {
+  email: string
+}
+
+export interface ResetPasswordData {
+  email: string
+  token: string
+  new_password_hash: string
+}
+
 export interface AuthResponse {
   message: string
   token?: string
@@ -247,6 +257,61 @@ class AuthService {
     }
 
     return await response.json()
+  }
+
+  // Forgot password - send reset token to email
+  async forgotPassword(data: ForgotPasswordData): Promise<any> {
+    console.log('🔍 authService.forgotPassword Debug:')
+    console.log('  Email:', data.email)
+    console.log('  API URL:', `${config.baseUrl}/api/forgot-password`)
+    
+    const response = await fetch(`${config.baseUrl}/api/forgot-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+
+    console.log('🔍 Response Status:', response.status)
+
+    if (!response.ok) {
+      const error = await response.json()
+      console.error('❌ Forgot Password Response Error:', error)
+      throw new Error(error.error || 'Failed to send reset email')
+    }
+
+    const result = await response.json()
+    console.log('✅ Forgot Password Response Success:', result)
+    return result
+  }
+
+  // Reset password - use token to set new password
+  async resetPassword(data: ResetPasswordData): Promise<any> {
+    console.log('🔍 authService.resetPassword Debug:')
+    console.log('  Email:', data.email)
+    console.log('  Token:', data.token)
+    console.log('  API URL:', `${config.baseUrl}/api/reset-password`)
+    
+    const response = await fetch(`${config.baseUrl}/api/reset-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+
+    console.log('🔍 Response Status:', response.status)
+
+    if (!response.ok) {
+      const error = await response.json()
+      console.error('❌ Reset Password Response Error:', error)
+      throw new Error(error.error || 'Failed to reset password')
+    }
+
+    const result = await response.json()
+    console.log('✅ Reset Password Response Success:', result)
+    return result
   }
 }
 
