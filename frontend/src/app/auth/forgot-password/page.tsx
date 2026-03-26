@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
+import { authService } from '@/lib/auth'
+import { passwordUtils } from '@/lib/password'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 
@@ -17,12 +18,7 @@ export default function ForgotPasswordPage() {
     setLoading(true)
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
-      })
-
-      if (error) throw error
-
+      await authService.forgotPassword({ email })
       setSubmitted(true)
       toast.success('Password reset email sent! Check your inbox.')
     } catch (error: any) {
@@ -46,15 +42,18 @@ export default function ForgotPasswordPage() {
             </div>
             <h3 className="mt-4 text-lg font-medium text-foreground">Check your email</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              We've sent a password reset link to{' '}
+              We've sent a password reset token to{' '}
               <span className="font-medium text-foreground">{email}</span>
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              The token will expire in 1 hour. Check your spam folder if you don't see it.
             </p>
             <div className="mt-6">
               <Link
-                href="/auth/login"
+                href="/auth/reset-password"
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
               >
-                Back to login
+                Reset your password
               </Link>
             </div>
             <div className="mt-4 text-center">
@@ -68,6 +67,11 @@ export default function ForgotPasswordPage() {
                 </button>
               </span>
             </div>
+            <div className="mt-4 text-center">
+              <Link href="/auth/login" className="text-sm text-muted-foreground hover:text-foreground">
+                Back to sign in
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -80,7 +84,7 @@ export default function ForgotPasswordPage() {
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-foreground">Reset your password</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Enter your email address and we'll send you a link to reset your password.
+            Enter your email address and we'll send you a token to reset your password.
           </p>
         </div>
 
@@ -110,7 +114,7 @@ export default function ForgotPasswordPage() {
               disabled={loading}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Sending...' : 'Send reset link'}
+              {loading ? 'Sending...' : 'Send reset token'}
             </button>
           </div>
         </form>
