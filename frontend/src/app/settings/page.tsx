@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { AppLayout } from '@/components/layout/AppLayout'
 import { useTheme } from '@/contexts/ThemeContext'
 import { Moon, Sun, Monitor, Check, Bell, Globe, Shield, HelpCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -41,14 +42,15 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <AppLayout>
+      <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+      <header className="bg-card shadow-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Manage your preferences and account settings</p>
+              <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+              <p className="text-sm text-muted-foreground">Manage your preferences and account settings</p>
             </div>
           </div>
         </div>
@@ -110,19 +112,19 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <div className="border-t pt-6 dark:border-gray-700">
-                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Current Theme</h3>
-                <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="border-t pt-6 border-border">
+                <h3 className="text-sm font-medium text-foreground mb-4">Current Theme</h3>
+                <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
                   {isDarkMode ? (
-                    <Moon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                    <Moon className="h-5 w-5 text-muted-foreground" />
                   ) : (
-                    <Sun className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                    <Sun className="h-5 w-5 text-muted-foreground" />
                   )}
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                    <p className="text-sm font-medium text-foreground">
                       {theme === 'system' ? 'System Preference' : `${theme.charAt(0).toUpperCase() + theme.slice(1)} Mode`}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-muted-foreground">
                       {theme === 'system' 
                         ? 'Follows your device\'s theme preference' 
                         : `Manually set to ${theme} theme`}
@@ -144,13 +146,13 @@ export default function SettingsPage() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">Push Notifications</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Receive notifications about your finances</p>
+                  <h3 className="text-sm font-medium text-foreground">Push Notifications</h3>
+                  <p className="text-xs text-muted-foreground">Receive notifications about your finances</p>
                 </div>
                 <button
                   onClick={handleNotificationToggle}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    notifications ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+                    notifications ? 'bg-primary' : 'bg-muted'
                   }`}
                 >
                   <span
@@ -163,11 +165,11 @@ export default function SettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">Budget Alerts</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Get notified when you exceed budget limits</p>
+                  <h3 className="text-sm font-medium text-foreground">Budget Alerts</h3>
+                  <p className="text-xs text-muted-foreground">Get notified when you exceed budget limits</p>
                 </div>
                 <button
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors bg-blue-600`}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors bg-primary`}
                 >
                   <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-6" />
                 </button>
@@ -175,11 +177,11 @@ export default function SettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">Savings Milestones</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Celebrate your savings achievements</p>
+                  <h3 className="text-sm font-medium text-foreground">Savings Milestones</h3>
+                  <p className="text-xs text-muted-foreground">Celebrate your savings achievements</p>
                 </div>
                 <button
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors bg-blue-600`}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors bg-primary`}
                 >
                   <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-6" />
                 </button>
@@ -198,13 +200,13 @@ export default function SettingsPage() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">Language</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Choose your preferred language</p>
+                  <h3 className="text-sm font-medium text-foreground">Language</h3>
+                  <p className="text-xs text-muted-foreground">Choose your preferred language</p>
                 </div>
                 <select
                   value={language}
                   onChange={(e) => handleLanguageChange(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                  className="px-3 py-2 border border-input rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card text-foreground text-sm"
                 >
                   <option value="en">English</option>
                   <option value="es">Español</option>
@@ -215,13 +217,13 @@ export default function SettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">Auto-save</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Automatically save your work</p>
+                  <h3 className="text-sm font-medium text-foreground">Auto-save</h3>
+                  <p className="text-xs text-muted-foreground">Automatically save your work</p>
                 </div>
                 <button
                   onClick={handleAutoSaveToggle}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    autoSave ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+                    autoSave ? 'bg-primary' : 'bg-muted'
                   }`}
                 >
                   <span
@@ -234,12 +236,12 @@ export default function SettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">Currency</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Display currency format</p>
+                  <h3 className="text-sm font-medium text-foreground">Currency</h3>
+                  <p className="text-xs text-muted-foreground">Display currency format</p>
                 </div>
                 <select
                   defaultValue="USD"
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                  className="px-3 py-2 border border-input rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card text-foreground text-sm"
                 >
                   <option value="USD">USD ($)</option>
                   <option value="EUR">EUR (€)</option>
@@ -337,5 +339,6 @@ export default function SettingsPage() {
         </div>
       </main>
     </div>
+    </AppLayout>
   )
 }

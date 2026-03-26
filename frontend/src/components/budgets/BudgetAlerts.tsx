@@ -151,10 +151,10 @@ export default function BudgetAlerts() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'warning': return 'bg-yellow-50 border-yellow-200 text-yellow-800'
-      case 'danger': return 'bg-orange-50 border-orange-200 text-orange-800'
-      case 'exceeded': return 'bg-red-50 border-red-200 text-red-800'
-      default: return 'bg-gray-50 border-gray-200 text-gray-800'
+      case 'warning': return 'bg-yellow-100 border-yellow-300 text-yellow-900 dark:bg-yellow-900 dark:border-yellow-700 dark:text-yellow-100'
+      case 'danger': return 'bg-orange-100 border-orange-300 text-orange-900 dark:bg-orange-900 dark:border-orange-700 dark:text-orange-100'
+      case 'exceeded': return 'bg-red-100 border-red-300 text-red-900 dark:bg-red-900 dark:border-red-700 dark:text-red-100'
+      default: return 'bg-card border-border text-card-foreground'
     }
   }
 
@@ -187,9 +187,9 @@ export default function BudgetAlerts() {
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+            <div className="h-4 bg-muted rounded w-3/4"></div>
+            <div className="h-4 bg-muted rounded w-1/2"></div>
+            <div className="h-4 bg-muted rounded w-2/3"></div>
           </div>
         </CardContent>
       </Card>

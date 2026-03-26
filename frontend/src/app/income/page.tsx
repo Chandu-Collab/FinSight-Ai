@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { AppLayout } from '@/components/layout/AppLayout'
 import { Plus, TrendingUp, Calendar, DollarSign, Edit, Trash2, Search, Filter, Download, BarChart3, ArrowUpRight, Wallet, PiggyBank, Target } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -25,16 +26,16 @@ const incomeSources = [
 ]
 
 const sourceColors: Record<string, { bg: string, text: string, gradient: string }> = {
-  'Salary': { bg: 'bg-blue-100', text: 'text-blue-800', gradient: 'from-blue-500 to-cyan-500' },
-  'Freelance': { bg: 'bg-purple-100', text: 'text-purple-800', gradient: 'from-purple-500 to-pink-500' },
-  'Business': { bg: 'bg-green-100', text: 'text-green-800', gradient: 'from-green-500 to-emerald-500' },
-  'Investments': { bg: 'bg-yellow-100', text: 'text-yellow-800', gradient: 'from-yellow-500 to-amber-500' },
-  'Rentals': { bg: 'bg-orange-100', text: 'text-orange-800', gradient: 'from-orange-500 to-red-500' },
-  'Dividends': { bg: 'bg-indigo-100', text: 'text-indigo-800', gradient: 'from-indigo-500 to-purple-500' },
-  'Side Hustle': { bg: 'bg-pink-100', text: 'text-pink-800', gradient: 'from-pink-500 to-rose-500' },
-  'Gifts': { bg: 'bg-teal-100', text: 'text-teal-800', gradient: 'from-teal-500 to-green-500' },
-  'Refunds': { bg: 'bg-gray-100', text: 'text-gray-800', gradient: 'from-gray-500 to-slate-500' },
-  'Other': { bg: 'bg-gray-100', text: 'text-gray-800', gradient: 'from-gray-500 to-slate-500' }
+  'Salary': { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-800 dark:text-blue-200', gradient: 'from-blue-500 to-cyan-500' },
+  'Freelance': { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-800 dark:text-purple-200', gradient: 'from-purple-500 to-pink-500' },
+  'Business': { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-800 dark:text-green-200', gradient: 'from-green-500 to-emerald-500' },
+  'Investments': { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-800 dark:text-yellow-200', gradient: 'from-yellow-500 to-amber-500' },
+  'Rentals': { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-800 dark:text-orange-200', gradient: 'from-orange-500 to-red-500' },
+  'Dividends': { bg: 'bg-indigo-100 dark:bg-indigo-900/30', text: 'text-indigo-800 dark:text-indigo-200', gradient: 'from-indigo-500 to-purple-500' },
+  'Side Hustle': { bg: 'bg-pink-100 dark:bg-pink-900/30', text: 'text-pink-800 dark:text-pink-200', gradient: 'from-pink-500 to-rose-500' },
+  'Gifts': { bg: 'bg-teal-100 dark:bg-teal-900/30', text: 'text-teal-800 dark:text-teal-200', gradient: 'from-teal-500 to-green-500' },
+  'Refunds': { bg: 'bg-muted', text: 'text-muted-foreground', gradient: 'from-gray-500 to-slate-500' },
+  'Other': { bg: 'bg-muted', text: 'text-muted-foreground', gradient: 'from-gray-500 to-slate-500' }
 }
 
 interface Income {
@@ -123,19 +124,20 @@ export default function IncomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading income data...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground font-medium">Loading income data...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50">
+    <AppLayout>
+      <div className="bg-gradient-to-br from-background to-accent/20">
       {/* Modern Header */}
-      <header className="bg-white/80 backdrop-blur-lg shadow-sm border-b border-gray-200/50 sticky top-0 z-50">
+      <header className="bg-card/80 backdrop-blur-lg shadow-sm border-b border-border/50 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
@@ -146,11 +148,11 @@ export default function IncomePage() {
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
                   Income Management
                 </h1>
-                <p className="text-sm text-gray-500">Track and manage your income sources</p>
+                <p className="text-sm text-muted-foreground">Track and manage your income sources</p>
               </div>
             </div>
             <div className="flex space-x-3">
-              <Button variant="outline" className="border-gray-300 hover:bg-gray-50">
+              <Button variant="outline" className="border-border hover:bg-accent">
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
@@ -169,9 +171,9 @@ export default function IncomePage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Enhanced Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-white/80 backdrop-blur-sm border-2 border-green-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="bg-card/80 backdrop-blur-sm border-2 border-green-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Total Income</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Income</CardTitle>
               <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
                 <DollarSign className="h-4 w-4 text-white" />
               </div>
@@ -180,7 +182,7 @@ export default function IncomePage() {
               <div className="text-3xl font-bold text-green-600">
                 ${totalIncome.toLocaleString()}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 From {filteredIncome.length} sources
               </p>
               <div className="mt-3 flex items-center text-sm">
@@ -190,9 +192,9 @@ export default function IncomePage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/80 backdrop-blur-sm border-2 border-blue-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="bg-card/80 backdrop-blur-sm border-2 border-blue-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Average Income</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Average Income</CardTitle>
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
                 <TrendingUp className="h-4 w-4 text-white" />
               </div>
@@ -201,18 +203,18 @@ export default function IncomePage() {
               <div className="text-3xl font-bold text-blue-600">
                 ${averageIncome.toFixed(2)}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Per transaction
               </p>
-              <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
+              <div className="mt-3 w-full bg-muted rounded-full h-2">
                 <div className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full" style={{ width: '75%' }} />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/80 backdrop-blur-sm border-2 border-purple-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="bg-card/80 backdrop-blur-sm border-2 border-purple-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Top Source</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Top Source</CardTitle>
               <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
                 <Target className="h-4 w-4 text-white" />
               </div>
@@ -224,7 +226,7 @@ export default function IncomePage() {
                   : 'None'
                 }
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Highest income source
               </p>
               {Object.keys(sourceTotals).length > 0 && (
@@ -237,21 +239,21 @@ export default function IncomePage() {
         </div>
 
         {/* Enhanced Search and Filter */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50 p-6 mb-6">
+        <div className="bg-card/80 backdrop-blur-sm rounded-2xl shadow-sm border border-border/50 p-6 mb-6">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Search income by source, description, or amount..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white/50"
+                className="pl-10 w-full px-4 py-3 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50"
               />
             </div>
             <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700">Filter by source:</span>
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">Filter by source:</span>
             </div>
           </div>
           
@@ -262,7 +264,7 @@ export default function IncomePage() {
                 "px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200",
                 selectedSource === 'all'
                   ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-muted text-foreground hover:bg-accent'
               )}
             >
               All Sources
@@ -275,7 +277,7 @@ export default function IncomePage() {
                   "px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200",
                   selectedSource === source
                     ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-muted text-foreground hover:bg-accent'
                 )}
               >
                 {source}
@@ -285,10 +287,10 @@ export default function IncomePage() {
         </div>
 
         {/* Enhanced Income List */}
-        <Card className="bg-white/80 backdrop-blur-sm border-2 border-gray-200/50 shadow-lg">
+        <Card className="bg-card/80 backdrop-blur-sm border-2 border-border/50 shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between pb-4">
-            <CardTitle className="text-lg font-semibold text-gray-800">Income Records</CardTitle>
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <CardTitle className="text-lg font-semibold text-foreground">Income Records</CardTitle>
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <BarChart3 className="h-4 w-4" />
               <span>{filteredIncome.length} transactions</span>
             </div>
@@ -301,8 +303,8 @@ export default function IncomePage() {
                     <DollarSign className="h-10 w-10 text-green-400" />
                   </div>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No income records</h3>
-                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                <h3 className="text-xl font-semibold text-foreground mb-2">No income records</h3>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                   {searchTerm || selectedSource !== 'all' 
                     ? 'No income found matching your filters. Try adjusting your search or filter criteria.' 
                     : 'Start by adding your first income record to begin tracking your earnings.'
@@ -319,37 +321,37 @@ export default function IncomePage() {
               <div className="overflow-x-auto">
                 <table className="min-w-full">
                   <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <tr className="border-b border-border">
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Date
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Source
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Description
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Amount
                       </th>
-                      <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-border">
                     {filteredIncome.map((item: Income) => (
-                      <tr key={item.id} className="hover:bg-gray-50/50 transition-colors duration-150">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                      <tr key={item.id} className="hover:bg-muted/50 transition-colors duration-150">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground font-medium">
                           {format(new Date(item.date), 'MMM dd, yyyy')}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${sourceColors[item.source]?.bg || 'bg-gray-100'} ${sourceColors[item.source]?.text || 'text-gray-800'}`}>
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${sourceColors[item.source]?.bg || 'bg-muted'} ${sourceColors[item.source]?.text || 'text-foreground'}`}>
                             {item.source}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {item.description || <span className="text-gray-400 italic">No description</span>}
+                        <td className="px-6 py-4 text-sm text-muted-foreground">
+                          {item.description || <span className="text-muted-foreground italic">No description</span>}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-lg font-bold text-green-600">
@@ -359,7 +361,7 @@ export default function IncomePage() {
                         <td className="px-6 py-4 whitespace-nowrap text-right">
                           <div className="flex justify-end space-x-2">
                             <Link href={`/income/${item.id}/edit`}>
-                              <Button variant="outline" size="sm" className="border-blue-300 hover:bg-blue-50 text-blue-600">
+                              <Button variant="outline" size="sm" className="border-border hover:bg-accent text-foreground">
                                 <Edit className="h-4 w-4" />
                               </Button>
                             </Link>
@@ -367,7 +369,7 @@ export default function IncomePage() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleDelete(item.id)}
-                              className="border-red-300 hover:bg-red-50 text-red-600"
+                              className="border-destructive hover:bg-destructive/10 text-destructive"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -383,5 +385,6 @@ export default function IncomePage() {
         </Card>
       </main>
     </div>
+    </AppLayout>
   )
 }

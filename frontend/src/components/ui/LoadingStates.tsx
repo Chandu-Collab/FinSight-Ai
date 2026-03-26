@@ -5,12 +5,12 @@ import { Loader2, RefreshCw } from 'lucide-react'
 // Full page loading spinner
 export function FullPageLoader({ message = 'Loading...' }: { message?: string }) {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center">
       <div className="flex flex-col items-center space-y-4">
         <div className="relative">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
         </div>
-        <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">{message}</p>
+        <p className="text-muted-foreground text-sm font-medium">{message}</p>
       </div>
     </div>
   )
@@ -19,11 +19,11 @@ export function FullPageLoader({ message = 'Loading...' }: { message?: string })
 // Card loading skeleton
 export function CardSkeleton() {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <div className="bg-card rounded-lg shadow-sm border border-border p-6">
       <div className="space-y-4">
-        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4 animate-pulse"></div>
-        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2 animate-pulse"></div>
+        <div className="h-4 bg-muted rounded animate-pulse"></div>
+        <div className="h-3 bg-muted rounded w-3/4 animate-pulse"></div>
+        <div className="h-8 bg-muted rounded w-1/2 animate-pulse"></div>
       </div>
     </div>
   )
@@ -32,13 +32,13 @@ export function CardSkeleton() {
 // List item skeleton
 export function ListItemSkeleton() {
   return (
-    <div className="flex items-center space-x-4 p-4 border-b border-gray-200 dark:border-gray-700">
-      <div className="h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+    <div className="flex items-center space-x-4 p-4 border-b border-border">
+      <div className="h-10 w-10 bg-muted rounded-full animate-pulse"></div>
       <div className="flex-1 space-y-2">
-        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 animate-pulse"></div>
-        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 animate-pulse"></div>
+        <div className="h-4 bg-muted rounded w-1/4 animate-pulse"></div>
+        <div className="h-3 bg-muted rounded w-1/2 animate-pulse"></div>
       </div>
-      <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-16 animate-pulse"></div>
+      <div className="h-6 bg-muted rounded w-16 animate-pulse"></div>
     </div>
   )
 }
@@ -46,18 +46,18 @@ export function ListItemSkeleton() {
 // Table skeleton
 export function TableSkeleton({ rows = 5 }: { rows?: number }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="border-b border-gray-200 dark:border-gray-700 p-4">
-        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3 animate-pulse"></div>
+    <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+      <div className="border-b border-border p-4">
+        <div className="h-4 bg-muted rounded w-1/3 animate-pulse"></div>
       </div>
-      <div className="divide-y divide-gray-200 dark:divide-gray-700">
+      <div className="divide-y divide-border">
         {Array.from({ length: rows }).map((_, index) => (
           <div key={index} className="p-4">
             <div className="grid grid-cols-4 gap-4">
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              <div className="h-4 bg-muted rounded animate-pulse"></div>
+              <div className="h-4 bg-muted rounded animate-pulse"></div>
+              <div className="h-4 bg-muted rounded animate-pulse"></div>
+              <div className="h-4 bg-muted rounded animate-pulse"></div>
             </div>
           </div>
         ))}
@@ -97,10 +97,10 @@ export function FormLoadingOverlay({ loading }: { loading: boolean }) {
   if (!loading) return null
 
   return (
-    <div className="absolute inset-0 bg-white dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-75 flex items-center justify-center z-50 rounded-lg">
+    <div className="absolute inset-0 bg-background/75 flex items-center justify-center z-50 rounded-lg">
       <div className="flex flex-col items-center space-y-2">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="text-sm text-gray-600 dark:text-gray-400">Processing...</p>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Processing...</p>
       </div>
     </div>
   )
@@ -109,14 +109,14 @@ export function FormLoadingOverlay({ loading }: { loading: boolean }) {
 // Dashboard card skeleton
 export function DashboardCardSkeleton() {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <div className="bg-card rounded-lg shadow-sm border border-border p-6">
       <div className="flex items-center justify-between mb-4">
-        <div className="h-6 w-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-        <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+        <div className="h-6 w-6 bg-muted rounded animate-pulse"></div>
+        <div className="h-4 w-16 bg-muted rounded animate-pulse"></div>
       </div>
       <div className="space-y-2">
-        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 animate-pulse"></div>
-        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 animate-pulse"></div>
+        <div className="h-8 bg-muted rounded w-1/3 animate-pulse"></div>
+        <div className="h-3 bg-muted rounded w-1/2 animate-pulse"></div>
       </div>
     </div>
   )
@@ -125,14 +125,14 @@ export function DashboardCardSkeleton() {
 // Chart skeleton
 export function ChartSkeleton() {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <div className="bg-card rounded-lg shadow-sm border border-border p-6">
       <div className="space-y-4">
-        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 animate-pulse"></div>
-        <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+        <div className="h-4 bg-muted rounded w-1/4 animate-pulse"></div>
+        <div className="h-48 bg-muted rounded animate-pulse"></div>
         <div className="flex justify-between">
-          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/6 animate-pulse"></div>
-          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/6 animate-pulse"></div>
-          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/6 animate-pulse"></div>
+          <div className="h-3 bg-muted rounded w-1/6 animate-pulse"></div>
+          <div className="h-3 bg-muted rounded w-1/6 animate-pulse"></div>
+          <div className="h-3 bg-muted rounded w-1/6 animate-pulse"></div>
         </div>
       </div>
     </div>
@@ -142,9 +142,9 @@ export function ChartSkeleton() {
 // Progress loading bar
 export function ProgressBar({ progress = 0 }: { progress?: number }) {
   return (
-    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+    <div className="w-full bg-muted rounded-full h-2">
       <div 
-        className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+        className="bg-primary h-2 rounded-full transition-all duration-300 ease-out"
         style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }}
       ></div>
     </div>
@@ -160,7 +160,7 @@ export function InlineSpinner({ size = 'sm', className = '' }: { size?: 'sm' | '
   }
 
   return (
-    <Loader2 className={`${sizeClasses[size]} animate-spin text-blue-600 ${className}`} />
+    <Loader2 className={`${sizeClasses[size]} animate-spin text-primary ${className}`} />
   )
 }
 
@@ -169,12 +169,12 @@ export function EmptyStateLoading({ message = 'Loading data...' }: { message?: s
   return (
     <div className="text-center py-12">
       <div className="flex justify-center mb-4">
-        <Loader2 className="h-12 w-12 animate-spin text-gray-400" />
+        <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
       </div>
-      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+      <h3 className="text-lg font-medium text-foreground mb-2">
         {message}
       </h3>
-      <p className="text-gray-500 dark:text-gray-400">
+      <p className="text-muted-foreground">
         Please wait while we fetch your data...
       </p>
     </div>
@@ -197,7 +197,7 @@ export function RetryButton({
     <button
       onClick={onRetry}
       disabled={loading}
-      className={`inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+      className={`inline-flex items-center justify-center px-4 py-2 border border-input text-sm font-medium rounded-md text-foreground bg-card hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
     >
       {loading ? (
         <Loader2 className="h-4 w-4 animate-spin mr-2" />
