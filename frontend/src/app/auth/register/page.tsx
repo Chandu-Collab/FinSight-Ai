@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
+import { authService } from '@/lib/auth'
+import { passwordUtils } from '@/lib/password'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 
@@ -30,21 +31,32 @@ export default function RegisterPage() {
       return
     }
 
+    // Validate password
+    const passwordValidation = passwordUtils.validate(password)
+    if (!passwordValidation.isValid) {
+      toast.error(passwordValidation.errors[0] || 'Invalid password')
+      setLoading(false)
+      return
+    }
+
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          }
-        }
+      // Hash password (in production, use proper hashing like bcrypt)
+      const password_hash = passwordUtils.encode(password)
+      
+      // Initiate registration with OTP
+      const result = await authService.register({ 
+        email, 
+        password_hash, 
+        name: fullName,
+        phone_number: '',
+        date_of_birth: '',
+        gender: ''
       })
-
-      if (error) throw error
-
-      toast.success('Account created successfully! Please check your email to verify.')
-      router.push('/auth/login')
+      
+      toast.success('Registration initiated! Please check your email for OTP.')
+      
+      // Redirect to OTP verification page
+      router.push(`/auth/verify-otp?email=${encodeURIComponent(email)}&type=register`)
     } catch (error: any) {
       toast.error(error.message || 'Failed to create account')
     } finally {
@@ -55,6 +67,15 @@ export default function RegisterPage() {
   return (
     <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
       <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">
+            Create your account
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            We'll send a verification code to your email
+          </p>
+        </div>
+
         <form className="space-y-6" onSubmit={handleRegister}>
           <div>
             <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
@@ -135,7 +156,7 @@ export default function RegisterPage() {
               disabled={loading}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Creating account...' : 'Create account'}
+              {loading ? 'Sending OTP...' : 'Send OTP'}
             </button>
           </div>
         </form>
