@@ -2190,8 +2190,9 @@ def delete_income(income_id):
 @app.route('/api/reports', methods=['GET'])
 @jwt_required
 def get_reports():
-    """Get all reports"""
-    user_id = request.args.get('user_id', 'demo-user-001')
+    """Get all reports for authenticated user"""
+    user_id = g.user_id
+    print(f"🔍 Backend: GET /api/reports called for user_id: {user_id}")
     try:
         conn = get_db_conn()
         cur = conn.cursor()
@@ -2204,8 +2205,10 @@ def get_reports():
         user_reports = [dict(zip(columns, row)) for row in rows]
         cur.close()
         conn.close()
+        print(f"🔍 Backend: Found {len(user_reports)} reports for user {user_id}")
         return jsonify({'data': user_reports, 'status': 'success'})
     except Exception as e:
+        print(f"❌ Backend: Error in get_reports: {str(e)}")
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/api/reports', methods=['POST'])
@@ -2214,11 +2217,13 @@ def generate_report():
     """Generate new report"""
     try:
         data = request.get_json()
-        user_id = data.get('user_id', 'demo-user-001')
+        user_id = g.user_id
         report_type = data.get('report_type', 'summary')
         date_range = data.get('date_range', {'start': '2024-03-01', 'end': '2024-03-31'})
         format_type = data.get('format', 'pdf')
         generated_at = datetime.datetime.now()
+        requested_at = generated_at
+        status = 'processing'
         # Get user data
         conn = get_db_conn()
         cur = conn.cursor()
