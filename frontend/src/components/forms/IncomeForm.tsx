@@ -40,7 +40,7 @@ type IncomeFormData = z.infer<typeof incomeSchema>
 
 interface IncomeFormProps {
   initialData?: Partial<IncomeFormData>
-  onSubmit: (data: IncomeFormData) => Promise<void>
+  onSubmit?: (data: IncomeFormData) => Promise<void>
   onCancel?: () => void
   loading?: boolean
   title?: string
@@ -56,51 +56,56 @@ const incomeSources = [
   'Other',
 ]
 
-export function IncomeForm() {
+export function IncomeForm({ initialData, onSubmit, onCancel, loading, title }: IncomeFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   
   const form = useForm<IncomeFormData>({
     resolver: zodResolver(incomeSchema),
     defaultValues: {
-      amount: '',
-      source: '',
-      description: '',
-      date: new Date().toISOString().split('T')[0],
+      amount: initialData?.amount || '',
+      source: initialData?.source || '',
+      description: initialData?.description || '',
+      date: initialData?.date || new Date().toISOString().split('T')[0],
     },
   })
 
-  const onSubmit = async (data: IncomeFormData) => {
-    try {
-      setIsSubmitting(true)
-      
-      // Mock API call - replace with actual implementation
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      console.log('Income data:', {
-        ...data,
-        amount: Number(data.amount),
-      })
-      
-      toast.success('Income added successfully!')
-      form.reset()
-      
-    } catch (error) {
-      toast.error('Failed to add income')
-      console.error('Error:', error)
-    } finally {
-      setIsSubmitting(false)
+  const onFormSubmit = async (data: IncomeFormData) => {
+    if (onSubmit) {
+      await onSubmit(data)
+    } else {
+      // Default behavior if no onSubmit provided
+      try {
+        setIsSubmitting(true)
+        
+        // Mock API call - replace with actual implementation
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        console.log('Income data:', {
+          ...data,
+          amount: Number(data.amount),
+        })
+        
+        toast.success('Income added successfully!')
+        form.reset()
+        
+      } catch (error) {
+        toast.error('Failed to add income')
+        console.error('Error:', error)
+      } finally {
+        setIsSubmitting(false)
+      }
     }
   }
 
   return (
     <Card className="p-6 max-w-2xl mx-auto">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Add Income</h2>
+        <h2 className="text-2xl font-bold text-gray-900">{title || 'Add Income'}</h2>
         <p className="text-gray-600 mt-1">Record your income sources</p>
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onFormSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
@@ -195,15 +200,15 @@ export function IncomeForm() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => form.reset()}
+              onClick={onCancel || (() => form.reset())}
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={loading || isSubmitting}
             >
-              {isSubmitting ? 'Adding...' : 'Add Income'}
+              {loading || isSubmitting ? 'Adding...' : 'Add Income'}
             </Button>
           </div>
         </form>

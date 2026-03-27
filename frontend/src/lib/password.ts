@@ -1,15 +1,31 @@
 // Password utilities for FinSight AI
-// NOTE: This is a simple implementation for demo purposes
-// In production, use proper password hashing libraries like bcrypt, scrypt, or Argon2
+// Using bcrypt for secure password hashing
+
+import bcrypt from 'bcryptjs'
 
 export const passwordUtils = {
-  // Simple encoding for demo (NOT SECURE for production)
+  // Hash password using bcrypt
+  hash: async (password: string): Promise<string> => {
+    const saltRounds = 10
+    return await bcrypt.hash(password, saltRounds)
+  },
+
+  // Compare password with hash
+  compare: async (password: string, hash: string): Promise<boolean> => {
+    return await bcrypt.compare(password, hash)
+  },
+
+  // For backward compatibility during transition (remove after migration)
   encode: (password: string): string => {
+    // This is deprecated - use hash() instead
+    console.warn('⚠️ Using deprecated encode() method. Please migrate to hash()')
     return btoa(password)
   },
 
-  // Simple decoding for demo (NOT SECURE for production)
+  // For backward compatibility during transition (remove after migration)
   decode: (encodedPassword: string): string => {
+    // This is deprecated - use compare() instead
+    console.warn('⚠️ Using deprecated decode() method. Please migrate to compare()')
     try {
       return atob(encodedPassword)
     } catch {

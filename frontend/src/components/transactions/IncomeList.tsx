@@ -26,35 +26,11 @@ export function IncomeList() {
 
   const fetchIncome = async () => {
     try {
-      // Mock data for now - replace with actual API call
-      const mockIncome: Income[] = [
-        {
-          id: '1',
-          amount: 3500,
-          source: 'Salary',
-          description: 'Monthly salary',
-          date: '2024-03-24',
-          created_at: '2024-03-24T10:00:00Z',
-        },
-        {
-          id: '2',
-          amount: 500,
-          source: 'Freelance',
-          description: 'Web design project',
-          date: '2024-03-20',
-          created_at: '2024-03-20T15:30:00Z',
-        },
-        {
-          id: '3',
-          amount: 150,
-          source: 'Investment',
-          description: 'Dividend payment',
-          date: '2024-03-15',
-          created_at: '2024-03-15T09:00:00Z',
-        },
-      ]
+      // TODO: Replace with actual API call to fetch income data
+      // For now, show empty state until API is implemented
+      console.log('🔍 Fetching income data - API endpoint not yet implemented')
       
-      setIncome(mockIncome)
+      setIncome([]) // No mock data - empty state
     } catch (error) {
       toast.error('Failed to fetch income data')
       console.error('Error fetching income:', error)
@@ -69,13 +45,14 @@ export function IncomeList() {
     }
 
     try {
-      // Mock API call - replace with actual implementation
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // TODO: Replace with actual API call to delete income
+      console.log('🔍 Deleting income - API endpoint not yet implemented')
       
+      // For now, just remove from local state
       setIncome(income.filter(item => item.id !== id))
-      toast.success('Income deleted successfully')
+      toast.success('Income record deleted')
     } catch (error) {
-      toast.error('Failed to delete income')
+      toast.error('Failed to delete income record')
       console.error('Error deleting income:', error)
     }
   }

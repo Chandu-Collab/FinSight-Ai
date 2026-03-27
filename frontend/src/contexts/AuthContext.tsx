@@ -1,14 +1,8 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { authService } from '@/lib/auth'
+import { authService, User } from '@/lib/auth'
 import toast from 'react-hot-toast'
-
-interface User {
-  id: string
-  email: string
-  name?: string
-}
 
 interface AuthContextType {
   user: User | null
@@ -63,6 +57,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     checkAuth()
   }, [])
 
+  // Log user state changes for debugging (remove in production)
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && user) {
+      console.log('🔍 User state updated:', {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        phone_number: user.phone_number,
+        email_verified: user.email_verified,
+        isAuthenticated: !!token && !!user
+      })
+    }
+  }, [user, token])
+
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true)
@@ -101,8 +109,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   const setAuthState = (token: string, user: User) => {
-    console.log('🔍 setAuthState called with:', { token, user })
-    
     // Update React state first
     setToken(token)
     setUser(user)
@@ -111,7 +117,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (typeof window !== 'undefined') {
       localStorage.setItem('jwt_token', token)
       localStorage.setItem('user_data', JSON.stringify(user))
-      console.log('🔍 Auth state updated and stored in localStorage')
     }
   }
 

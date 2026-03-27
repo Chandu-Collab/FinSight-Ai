@@ -50,7 +50,7 @@ export default function RegisterPage() {
     }
 
     try {
-      // Send password as plain text (backend will handle hashing)
+      // Send plain password for secure backend hashing
       const password_hash = password
       
       // Initiate registration with OTP

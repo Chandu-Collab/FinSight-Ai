@@ -950,9 +950,24 @@ def verify_email():
         cur.close()
         conn.close()
         return jsonify({'error': 'OTP expired'}), 400
-    # Insert into users
+    # Insert into users with proper password hashing
+    plain_password = password_hash  # This is actually plain password now
+    try:
+        import bcrypt
+        # Hash the password before storing
+        hashed_password = bcrypt.hashpw(plain_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    except Exception as e:
+        # Fallback to base64 encoding for backward compatibility
+        try:
+            import base64
+            hashed_password = base64.b64encode(plain_password.encode('utf-8')).decode('utf-8')
+        except:
+            # Last resort - store as plain text (not recommended)
+            hashed_password = plain_password
+            print(f"Warning: Could not hash password, storing as plain text: {e}")
+    
     cur.execute('INSERT INTO users (email, password_hash, name, phone_number, date_of_birth, gender, email_verified) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id',
-                (email, password_hash, name, phone_number, date_of_birth, gender, True))
+                (email, hashed_password, name, phone_number, date_of_birth, gender, True))
     user_id = cur.fetchone()[0]
     # Remove from pending_users
     cur.execute('DELETE FROM pending_users WHERE id=%s', (pending_id,))
@@ -967,31 +982,62 @@ def verify_email():
 def login_initiate():
     data = request.get_json()
     email = data['email']
-    password_hash = data['password_hash']
+    plain_password = data['password_hash']  # This is actually plain password now
     
     conn = get_db_conn()
     cur = conn.cursor()
     
-    # Try to find user with the provided hash first
-    cur.execute('SELECT id, email_verified FROM users WHERE email=%s AND password_hash=%s', (email, password_hash))
+    # Try to find user and verify password
+    cur.execute('SELECT id, email_verified, password_hash FROM users WHERE email=%s', (email,))
     row = cur.fetchone()
-    
-    # If not found, try with base64 decoded password (for backward compatibility)
-    if not row:
-        try:
-            import base64
-            decoded_password = base64.b64decode(password_hash).decode()
-            cur.execute('SELECT id, email_verified FROM users WHERE email=%s AND password_hash=%s', (email, decoded_password))
-            row = cur.fetchone()
-        except:
-            pass
     
     if not row:
         cur.close()
         conn.close()
         return jsonify({'error': 'Invalid credentials'}), 401
+    
+    user_id, email_verified, stored_hash = row
+    
+    # Verify password
+    password_valid = False
+    
+    # Try bcrypt verification first (for properly hashed passwords)
+    try:
+        import bcrypt
+        if bcrypt.checkpw(plain_password.encode('utf-8'), stored_hash.encode('utf-8')):
+            password_valid = True
+        else:
+            # Try legacy methods for backward compatibility
+            try:
+                import base64
+                # Check if stored password is base64 encoded
+                decoded_stored = base64.b64decode(stored_hash).decode()
+                if plain_password == decoded_stored:
+                    password_valid = True
+                elif plain_password == stored_hash:  # Plain text comparison
+                    password_valid = True
+            except:
+                # Plain text comparison as last resort
+                if plain_password == stored_hash:
+                    password_valid = True
+    except Exception as e:
+        # If bcrypt fails, try legacy methods
+        try:
+            import base64
+            decoded_stored = base64.b64decode(stored_hash).decode()
+            if plain_password == decoded_stored:
+                password_valid = True
+            elif plain_password == stored_hash:  # Plain text comparison
+                password_valid = True
+        except:
+            if plain_password == stored_hash:
+                password_valid = True
+    
+    if not password_valid:
+        cur.close()
+        conn.close()
+        return jsonify({'error': 'Invalid credentials'}), 401
         
-    user_id, email_verified = row
     if not email_verified:
         cur.close()
         conn.close()
@@ -1049,10 +1095,42 @@ def login_verify_otp():
         return jsonify({'error': 'OTP expired'}), 400
     # OTP valid, delete it and issue JWT
     cur.execute('DELETE FROM login_otps WHERE user_id=%s', (user_id,))
+    
+    # Fetch user data to return with token
+    cur.execute('''
+        SELECT id, email, name, profile_picture, phone_number, address, date_of_birth, gender, status, role, preferences, last_login, email_verified, two_factor_enabled, bio, created_at, updated_at
+        FROM users 
+        WHERE id = %s
+    ''', (user_id,))
+    user_data_row = cur.fetchone()
+    
+    # Update last login time
+    cur.execute('UPDATE users SET last_login = NOW() WHERE id = %s', (user_id,))
+    
     token = generate_jwt(user_id, email)
+    conn.commit()
     cur.close()
     conn.close()
-    return jsonify({'message': 'Login successful', 'token': token})
+    
+    if user_data_row:
+        columns = ['id', 'email', 'name', 'profile_picture', 'phone_number', 'address', 'date_of_birth', 'gender', 'status', 'role', 'preferences', 'last_login', 'email_verified', 'two_factor_enabled', 'bio', 'created_at', 'updated_at']
+        user_dict = dict(zip(columns, user_data_row))
+        
+        # Parse JSON fields for proper output
+        if user_dict.get('preferences'):
+            try:
+                import json
+                user_dict['preferences'] = json.loads(user_dict['preferences']) if isinstance(user_dict['preferences'], str) else user_dict['preferences']
+            except (json.JSONDecodeError, TypeError):
+                user_dict['preferences'] = {}
+        
+        return jsonify({
+            'message': 'Login successful', 
+            'token': token, 
+            'user': user_dict
+        })
+    else:
+        return jsonify({'message': 'Login successful', 'token': token})
 
 # --- EXAMPLE PROTECTED ENDPOINT ---
 @app.route('/api/protected', methods=['GET'])
@@ -1213,13 +1291,22 @@ def get_all_users():
         conn = get_db_conn()
         cur = conn.cursor()
         cur.execute('''
-            SELECT id, email, name, phone_number, date_of_birth, gender, email_verified, created_at, updated_at
+            SELECT id, email, name, profile_picture, phone_number, address, date_of_birth, gender, status, role, preferences, last_login, email_verified, two_factor_enabled, bio, created_at, updated_at
             FROM users 
             ORDER BY created_at DESC
         ''')
         rows = cur.fetchall()
-        columns = ['id', 'email', 'name', 'phone_number', 'date_of_birth', 'gender', 'email_verified', 'created_at', 'updated_at']
+        columns = ['id', 'email', 'name', 'profile_picture', 'phone_number', 'address', 'date_of_birth', 'gender', 'status', 'role', 'preferences', 'last_login', 'email_verified', 'two_factor_enabled', 'bio', 'created_at', 'updated_at']
         users = [dict(zip(columns, row)) for row in rows]
+        
+        # Parse JSON fields for proper output
+        for user in users:
+            if user.get('preferences'):
+                try:
+                    import json
+                    user['preferences'] = json.loads(user['preferences']) if isinstance(user['preferences'], str) else user['preferences']
+                except (json.JSONDecodeError, TypeError):
+                    user['preferences'] = {}
         cur.close()
         conn.close()
         return jsonify({'data': users, 'status': 'success'})
@@ -1234,7 +1321,7 @@ def get_user_by_id(user_id):
         conn = get_db_conn()
         cur = conn.cursor()
         cur.execute('''
-            SELECT id, email, name, phone_number, date_of_birth, gender, email_verified, created_at, updated_at
+            SELECT id, email, name, profile_picture, phone_number, address, date_of_birth, gender, status, role, preferences, last_login, email_verified, two_factor_enabled, bio, created_at, updated_at
             FROM users 
             WHERE id = %s
         ''', (user_id,))
@@ -1245,8 +1332,16 @@ def get_user_by_id(user_id):
         if not row:
             return jsonify({'error': 'User not found', 'status': 'error'}), 404
             
-        columns = ['id', 'email', 'name', 'phone_number', 'date_of_birth', 'gender', 'email_verified', 'created_at', 'updated_at']
+        columns = ['id', 'email', 'name', 'profile_picture', 'phone_number', 'address', 'date_of_birth', 'gender', 'status', 'role', 'preferences', 'last_login', 'email_verified', 'two_factor_enabled', 'bio', 'created_at', 'updated_at']
         user = dict(zip(columns, row))
+        
+        # Parse JSON fields for proper output
+        if user.get('preferences'):
+            try:
+                import json
+                user['preferences'] = json.loads(user['preferences']) if isinstance(user['preferences'], str) else user['preferences']
+            except (json.JSONDecodeError, TypeError):
+                user['preferences'] = {}
         return jsonify({'data': user, 'status': 'success'})
     except Exception as e:
         return jsonify({'error': str(e), 'status': 'error'}), 500
@@ -1269,14 +1364,30 @@ def update_user(user_id):
             return jsonify({'error': 'User not found', 'status': 'error'}), 404
         
         # Build dynamic update query
-        allowed_fields = ['name', 'phone_number', 'date_of_birth', 'gender', 'email_verified']
+        allowed_fields = ['name', 'profile_picture', 'phone_number', 'address', 'date_of_birth', 'gender', 'status', 'role', 'preferences', 'last_login', 'email_verified', 'two_factor_enabled', 'bio']
         update_clauses = []
         values = []
         
         for field in allowed_fields:
             if field in data:
                 update_clauses.append(f"{field} = %s")
-                values.append(data[field])
+                # Handle JSONB field for preferences
+                if field == 'preferences':
+                    if isinstance(data[field], str):
+                        # If it's a string, try to parse it as JSON
+                        try:
+                            import json
+                            json.loads(data[field])  # Validate JSON
+                            values.append(data[field])
+                        except json.JSONDecodeError:
+                            # If not valid JSON, convert string to JSON string
+                            values.append(json.dumps(data[field]))
+                    else:
+                        # If it's already a dict/object, convert to JSON string
+                        import json
+                        values.append(json.dumps(data[field]))
+                else:
+                    values.append(data[field])
         
         if not update_clauses:
             cur.close()
@@ -1291,7 +1402,7 @@ def update_user(user_id):
             UPDATE users 
             SET {', '.join(update_clauses)} 
             WHERE id = %s 
-            RETURNING id, email, name, phone_number, date_of_birth, gender, email_verified, created_at, updated_at
+            RETURNING id, email, name, profile_picture, phone_number, address, date_of_birth, gender, status, role, preferences, last_login, email_verified, two_factor_enabled, bio, created_at, updated_at
         '''
         
         cur.execute(update_query, values)
@@ -1300,8 +1411,16 @@ def update_user(user_id):
         cur.close()
         conn.close()
         
-        columns = ['id', 'email', 'name', 'phone_number', 'date_of_birth', 'gender', 'email_verified', 'created_at', 'updated_at']
+        columns = ['id', 'email', 'name', 'profile_picture', 'phone_number', 'address', 'date_of_birth', 'gender', 'status', 'role', 'preferences', 'last_login', 'email_verified', 'two_factor_enabled', 'bio', 'created_at', 'updated_at']
         updated_user = dict(zip(columns, updated_row))
+        
+        # Parse JSON fields for proper output
+        if updated_user.get('preferences'):
+            try:
+                import json
+                updated_user['preferences'] = json.loads(updated_user['preferences']) if isinstance(updated_user['preferences'], str) else updated_user['preferences']
+            except (json.JSONDecodeError, TypeError):
+                updated_user['preferences'] = {}
         return jsonify({'data': updated_user, 'status': 'success'})
     except Exception as e:
         return jsonify({'error': str(e), 'status': 'error'}), 500
@@ -2071,8 +2190,9 @@ def delete_income(income_id):
 @app.route('/api/reports', methods=['GET'])
 @jwt_required
 def get_reports():
-    """Get all reports"""
-    user_id = request.args.get('user_id', 'demo-user-001')
+    """Get all reports for authenticated user"""
+    user_id = g.user_id
+    print(f"🔍 Backend: GET /api/reports called for user_id: {user_id}")
     try:
         conn = get_db_conn()
         cur = conn.cursor()
@@ -2085,8 +2205,10 @@ def get_reports():
         user_reports = [dict(zip(columns, row)) for row in rows]
         cur.close()
         conn.close()
+        print(f"🔍 Backend: Found {len(user_reports)} reports for user {user_id}")
         return jsonify({'data': user_reports, 'status': 'success'})
     except Exception as e:
+        print(f"❌ Backend: Error in get_reports: {str(e)}")
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/api/reports', methods=['POST'])
@@ -2095,11 +2217,13 @@ def generate_report():
     """Generate new report"""
     try:
         data = request.get_json()
-        user_id = data.get('user_id', 'demo-user-001')
+        user_id = g.user_id
         report_type = data.get('report_type', 'summary')
         date_range = data.get('date_range', {'start': '2024-03-01', 'end': '2024-03-31'})
         format_type = data.get('format', 'pdf')
         generated_at = datetime.datetime.now()
+        requested_at = generated_at
+        status = 'processing'
         # Get user data
         conn = get_db_conn()
         cur = conn.cursor()

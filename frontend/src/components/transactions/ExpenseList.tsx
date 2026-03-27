@@ -26,43 +26,11 @@ export function ExpenseList() {
 
   const fetchExpenses = async () => {
     try {
-      // Mock data for now - replace with actual API call
-      const mockExpenses: Expense[] = [
-        {
-          id: '1',
-          amount: 250,
-          category: 'Food',
-          description: 'Grocery shopping',
-          date: '2024-03-25',
-          created_at: '2024-03-25T10:00:00Z',
-        },
-        {
-          id: '2',
-          amount: 120,
-          category: 'Transport',
-          description: 'Gas refill',
-          date: '2024-03-23',
-          created_at: '2024-03-23T15:30:00Z',
-        },
-        {
-          id: '3',
-          amount: 80,
-          category: 'Entertainment',
-          description: 'Movie tickets',
-          date: '2024-03-22',
-          created_at: '2024-03-22T20:00:00Z',
-        },
-        {
-          id: '4',
-          amount: 45,
-          category: 'Utilities',
-          description: 'Electric bill',
-          date: '2024-03-20',
-          created_at: '2024-03-20T09:00:00Z',
-        },
-      ]
+      // TODO: Replace with actual API call to fetch expense data
+      // For now, show empty state until API is implemented
+      console.log('🔍 Fetching expense data - API endpoint not yet implemented')
       
-      setExpenses(mockExpenses)
+      setExpenses([]) // No mock data - empty state
     } catch (error) {
       toast.error('Failed to fetch expense data')
       console.error('Error fetching expenses:', error)
@@ -77,13 +45,14 @@ export function ExpenseList() {
     }
 
     try {
-      // Mock API call - replace with actual implementation
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // TODO: Replace with actual API call to delete expense
+      console.log('🔍 Deleting expense - API endpoint not yet implemented')
       
+      // For now, just remove from local state
       setExpenses(expenses.filter(item => item.id !== id))
-      toast.success('Expense deleted successfully')
+      toast.success('Expense record deleted')
     } catch (error) {
-      toast.error('Failed to delete expense')
+      toast.error('Failed to delete expense record')
       console.error('Error deleting expense:', error)
     }
   }

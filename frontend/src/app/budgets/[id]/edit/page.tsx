@@ -2,22 +2,27 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
+import { getBudgetById, updateBudget, deleteBudget } from '@/lib/api/budgets'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Target, Loader2, AlertTriangle } from 'lucide-react'
+import { AppLayout } from '@/components/layout/AppLayout'
+import { ArrowLeft, Target, Loader2, AlertTriangle, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 
 interface Budget {
   id: string
+  user_id: string
   name: string
   category: string
   amount: number
   spent: number
   month: string
   alert_threshold: number
+  description: string
+  is_active: boolean
+  rollover: boolean
   created_at: string
 }
 
@@ -73,33 +78,38 @@ export default function EditBudgetPage() {
   }, [id])
 
   const fetchBudget = async () => {
+    setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('budgets')
-        .select('*')
-        .eq('id', id)
-        .single()
-
-      if (error) throw error
-
-      if (data) {
+      console.log('Fetching budget with ID:', id)
+      const data = await getBudgetById(id)
+      console.log('Received budget data:', data)
+      
+      if (data && data.data) {
+        // If the API response has a data wrapper
+        setBudget(data.data)
+        console.log('Set budget from data.data:', data.data)
+      } else if (data) {
+        // If the API response is direct
         setBudget(data)
+        console.log('Set budget directly:', data)
+      } else {
+        throw new Error('No budget data received')
       }
     } catch (error: any) {
-      toast.error('Failed to fetch budget')
       console.error('Error fetching budget:', error)
+      toast.error('Failed to fetch budget: ' + (error.message || 'Unknown error'))
       router.push('/budgets')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, type, checked } = e.target as any;
     if (budget) {
       setBudget(prev => ({
         ...prev!,
-        [name]: value
+        [name]: type === 'checkbox' ? checked : (type === 'number' ? Number(value) : value)
       }))
     }
   }
@@ -145,18 +155,17 @@ export default function EditBudgetPage() {
     }
 
     try {
-      const { error } = await supabase
-        .from('budgets')
-        .update({
-          name: budget.name,
-          category: budget.category,
-          amount: budget.amount,
-          month: budget.month,
-          alert_threshold: budget.alert_threshold
-        })
-        .eq('id', id)
-
-      if (error) throw error
+      await updateBudget(id, {
+        name: budget.name,
+        category: budget.category,
+        amount: budget.amount,
+        month: budget.month,
+        alert_threshold: budget.alert_threshold,
+        description: budget.description,
+        is_active: budget.is_active,
+        rollover: budget.rollover,
+        spent: budget.spent
+      })
 
       toast.success('Budget updated successfully!')
       router.push('/budgets')
@@ -170,105 +179,119 @@ export default function EditBudgetPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
+      <AppLayout>
+        <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground font-medium">Loading budget data...</p>
+          </div>
+        </div>
+      </AppLayout>
     )
   }
 
   if (!budget) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900">Budget not found</h2>
-          <p className="mt-2 text-gray-500">The budget you're looking for doesn't exist.</p>
-          <Link href="/budgets">
-            <Button className="mt-4">Back to Budgets</Button>
-          </Link>
+      <AppLayout>
+        <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Target className="h-10 w-10 text-red-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-foreground mb-2">Budget not found</h2>
+            <p className="text-muted-foreground mb-6">The budget you're looking for doesn't exist.</p>
+            <Link href="/budgets">
+              <Button className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 shadow-lg">
+                Back to Budgets
+              </Button>
+            </Link>
+          </div>
         </div>
-      </div>
+      </AppLayout>
     )
   }
 
   const currentRecommendation = budgetRecommendations[budget.category]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <Link href="/budgets">
-                <Button variant="outline" size="sm" className="flex items-center space-x-2">
-                  <ArrowLeft className="h-4 w-4" />
-                  <span>Back to Budgets</span>
-                </Button>
-              </Link>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Edit Budget</h1>
-                <p className="text-sm text-gray-500">Update budget details</p>
+    <AppLayout>
+      <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
+        {/* Header */}
+        <header className="bg-card/80 backdrop-blur-lg shadow-sm border-b border-border/50 sticky top-0 z-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-4">
+              <div className="flex items-center space-x-4">
+                <Link href="/budgets">
+                  <Button variant="outline" size="sm" className="flex items-center space-x-2">
+                    <ArrowLeft className="h-4 w-4" />
+                    <span>Back to Budgets</span>
+                  </Button>
+                </Link>
+                <div className="w-10 h-10 bg-gradient-to-r from-orange-600 to-amber-600 rounded-xl flex items-center justify-center">
+                  <Target className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
+                    Edit Budget
+                  </h1>
+                  <p className="text-sm text-muted-foreground">Update budget details</p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="max-w-2xl mx-auto">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Target className="h-5 w-5" />
-                Edit Budget Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-2xl mx-auto">
+            <Card className="bg-card/80 backdrop-blur-sm border-2 border-border/50 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Target className="h-5 w-5" />
+                  <span>Edit Budget Details</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Budget Name */}
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">
                     Budget Name *
                   </label>
-                  <div className="mt-1">
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      required
-                      value={budget.name}
-                      onChange={handleInputChange}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm"
-                      placeholder="e.g., Monthly Groceries"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    required
+                    value={budget.name || ''}
+                    onChange={handleInputChange}
+                    className="block w-full px-4 py-3 border border-input rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+                    placeholder="e.g., Monthly Groceries"
+                  />
                 </div>
 
                 {/* Category */}
                 <div>
-                  <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="category" className="block text-sm font-medium text-foreground mb-2">
                     Category *
                   </label>
-                  <div className="mt-1">
-                    <select
-                      id="category"
-                      name="category"
-                      required
-                      value={budget.category}
-                      onChange={handleInputChange}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm"
-                    >
-                      <option value="">Select a category...</option>
-                      {expenseCategories.map((category) => (
-                        <option key={category} value={category}>
-                          {categoryIcons[category]} {category}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <select
+                    id="category"
+                    name="category"
+                    required
+                    value={budget.category || ''}
+                    onChange={handleInputChange}
+                    className="block w-full px-4 py-3 border border-input rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+                  >
+                    <option value="">Select a category...</option>
+                    {expenseCategories.map((category) => (
+                      <option key={category} value={category}>
+                        {categoryIcons[category]} {category}
+                      </option>
+                    ))}
+                  </select>
                   <div className="mt-3">
-                    <p className="text-xs text-gray-500 mb-2">Quick select:</p>
+                    <p className="text-xs text-muted-foreground mb-2">Quick select:</p>
                     <div className="grid grid-cols-5 gap-2">
                       {expenseCategories.map((category) => (
                         <button
@@ -277,8 +300,8 @@ export default function EditBudgetPage() {
                           onClick={() => setBudget(prev => ({ ...prev!, category }))}
                           className={`p-2 text-xs rounded-lg transition-colors flex flex-col items-center ${
                             budget.category === category
-                              ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                              ? 'bg-primary/20 text-primary border border-primary/30'
+                              : 'bg-muted hover:bg-muted/80 text-muted-foreground'
                           }`}
                         >
                           <span className="text-lg">{categoryIcons[category]}</span>
@@ -291,12 +314,12 @@ export default function EditBudgetPage() {
 
                 {/* Amount */}
                 <div>
-                  <label htmlFor="amount" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="amount" className="block text-sm font-medium text-foreground mb-2">
                     Budget Amount *
                   </label>
-                  <div className="mt-1 relative rounded-md shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <span className="text-gray-500 sm:text-sm">$</span>
+                  <div className="relative rounded-xl shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <span className="text-muted-foreground sm:text-sm">$</span>
                     </div>
                     <input
                       type="number"
@@ -305,46 +328,18 @@ export default function EditBudgetPage() {
                       step="0.01"
                       min="0"
                       required
-                      value={budget.amount}
+                      value={budget.amount || ''}
                       onChange={handleInputChange}
-                      className="block w-full pl-8 pr-12 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm"
+                      className="block w-full pl-8 pr-12 py-3 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
                       placeholder="0.00"
                     />
                   </div>
-                  
-                  {/* Quick Amount Suggestions */}
-                  {currentRecommendation && (
-                    <div className="mt-3">
-                      <p className="text-xs text-gray-500 mb-2">
-                        Recommended range: ${currentRecommendation.min} - ${currentRecommendation.max}
-                      </p>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleQuickAmount(currentRecommendation.min)}
-                          className="px-3 py-1 text-xs bg-blue-100 hover:bg-blue-200 rounded-full transition-colors"
-                        >
-                          ${currentRecommendation.min}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleQuickAmount(currentRecommendation.max)}
-                          className="px-3 py-1 text-xs bg-blue-100 hover:bg-blue-200 rounded-full transition-colors"
-                        >
-                          ${currentRecommendation.max}
-                        </button>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {currentRecommendation.description}
-                      </p>
-                    </div>
-                  )}
                 </div>
 
                 {/* Month */}
                 <div>
-                  <label htmlFor="month" className="block text-sm font-medium text-gray-700">
-                    Month *
+                  <label htmlFor="month" className="block text-sm font-medium text-foreground mb-2">
+                    Budget Period *
                   </label>
                   <div className="mt-1">
                     <input
@@ -352,67 +347,109 @@ export default function EditBudgetPage() {
                       id="month"
                       name="month"
                       required
-                      value={budget.month}
+                      value={budget.month || ''}
                       onChange={handleInputChange}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm"
+                      className="block w-full px-4 py-3 border border-input rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+                      min="2020-01"
+                      max="2030-12"
                     />
                   </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Select the month and year for this budget period
+                  </p>
                 </div>
 
                 {/* Alert Threshold */}
                 <div>
-                  <label htmlFor="alert_threshold" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="alert_threshold" className="block text-sm font-medium text-foreground mb-2">
                     Alert Threshold
                   </label>
-                  <div className="mt-1">
-                    <select
-                      id="alert_threshold"
-                      name="alert_threshold"
-                      value={budget.alert_threshold}
-                      onChange={handleInputChange}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm"
-                    >
-                      <option value="50">50% - Early Warning</option>
-                      <option value="75">75% - Warning</option>
-                      <option value="80">80% - Standard Warning</option>
-                      <option value="90">90% - Critical Warning</option>
-                      <option value="95">95% - Urgent Alert</option>
-                    </select>
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <select
+                    id="alert_threshold"
+                    name="alert_threshold"
+                    value={budget.alert_threshold || 80}
+                    onChange={handleInputChange}
+                    className="block w-full px-4 py-3 border border-input rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+                  >
+                    <option value="50">50% - Early Warning</option>
+                    <option value="75">75% - Warning</option>
+                    <option value="80">80% - Standard Warning</option>
+                    <option value="90">90% - Critical Warning</option>
+                    <option value="95">95% - Urgent Alert</option>
+                  </select>
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Send alerts when spending reaches this percentage of the budget
                   </p>
                 </div>
 
-                {/* Current Spending Info */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">Current Status</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-gray-500">Budgeted</p>
-                      <p className="font-medium">${budget.amount.toLocaleString()}</p>
+                {/* Description */}
+                <div>
+                  <label htmlFor="description" className="block text-sm font-medium text-foreground mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    rows={3}
+                    value={budget.description || ''}
+                    onChange={handleInputChange}
+                    className="block w-full px-4 py-3 border border-input rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+                    placeholder="Optional description for this budget..."
+                  />
+                </div>
+
+                {/* Checkboxes */}
+                <div className="space-y-3">
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      name="is_active"
+                      type="checkbox"
+                      checked={budget.is_active ?? true}
+                      onChange={handleInputChange}
+                      className="w-4 h-4 text-primary border-input rounded focus:ring-primary"
+                    />
+                    <span className="text-sm font-medium text-foreground">Active Budget</span>
+                  </label>
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      name="rollover"
+                      type="checkbox"
+                      checked={budget.rollover ?? false}
+                      onChange={handleInputChange}
+                      className="w-4 h-4 text-primary border-input rounded focus:ring-primary"
+                    />
+                    <span className="text-sm font-medium text-foreground">Rollover Unused Amount</span>
+                  </label>
+                </div>
+
+                {/* Initial Spent (optional) */}
+                <div>
+                  <label htmlFor="spent" className="block text-sm font-medium text-foreground mb-2">
+                    Initial Spent Amount
+                  </label>
+                  <div className="relative rounded-xl shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <span className="text-muted-foreground sm:text-sm">$</span>
                     </div>
-                    <div>
-                      <p className="text-gray-500">Spent</p>
-                      <p className="font-medium text-orange-600">${budget.spent.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Remaining</p>
-                      <p className={`font-medium ${(budget.amount - budget.spent) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        ${Math.abs(budget.amount - budget.spent).toLocaleString()}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Percentage Used</p>
-                      <p className="font-medium">
-                        {((budget.spent / budget.amount) * 100).toFixed(1)}%
-                      </p>
-                    </div>
+                    <input
+                      type="number"
+                      id="spent"
+                      name="spent"
+                      step="0.01"
+                      min="0"
+                      value={budget.spent || ''}
+                      onChange={handleInputChange}
+                      className="block w-full pl-8 pr-12 py-3 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+                      placeholder="0.00"
+                    />
                   </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    If you've already spent money on this category, enter the amount here
+                  </p>
                 </div>
 
                 {/* Form Actions */}
-                <div className="flex justify-end space-x-3">
+                <div className="flex justify-end space-x-3 pt-6 border-t border-border/50">
                   <Link href="/budgets">
                     <Button type="button" variant="outline">
                       Cancel
@@ -421,17 +458,17 @@ export default function EditBudgetPage() {
                   <Button
                     type="submit"
                     disabled={saving}
-                    className="flex items-center space-x-2"
+                    className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 shadow-lg transform transition-all duration-200 hover:scale-105"
                   >
                     {saving ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Updating...</span>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Updating...
                       </>
                     ) : (
                       <>
-                        <Target className="h-4 w-4" />
-                        <span>Update Budget</span>
+                        <Target className="h-4 w-4 mr-2" />
+                        Update Budget
                       </>
                     )}
                   </Button>
@@ -440,44 +477,43 @@ export default function EditBudgetPage() {
             </CardContent>
           </Card>
 
-          {/* Delete Section */}
-          <Card className="mt-6 border-red-200">
-            <CardHeader>
-              <CardTitle className="text-red-600">Danger Zone</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <p className="text-sm text-gray-600">
-                  Once you delete a budget, there is no going back. Please be certain.
-                </p>
-                <Button
-                  variant="outline"
-                  className="border-red-300 text-red-600 hover:bg-red-50"
-                  onClick={() => {
-                    if (confirm('Are you sure you want to delete this budget?')) {
-                      handleDelete()
-                    }
-                  }}
-                >
-                  Delete Budget
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    </div>
+            {/* Delete Section */}
+            <Card className="mt-6 border-red-200/50 bg-card/80 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-red-600 flex items-center space-x-2">
+                  <Trash2 className="h-5 w-5" />
+                  <span>Danger Zone</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Once you delete a budget, there is no going back. Please be certain.
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="border-red-300 text-red-600 hover:bg-red-50"
+                    onClick={() => {
+                      if (confirm('Are you sure you want to delete this budget?')) {
+                        handleDelete()
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Budget
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    </AppLayout>
   )
 
   async function handleDelete() {
     try {
-      const { error } = await supabase
-        .from('budgets')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
-
+      await deleteBudget(id)
       toast.success('Budget deleted successfully!')
       router.push('/budgets')
     } catch (error: any) {

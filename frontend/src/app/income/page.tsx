@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
+import { incomeApi } from '@/lib/api/production'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { Plus, TrendingUp, Calendar, DollarSign, Edit, Trash2, Search, Filter, Download, BarChart3, ArrowUpRight, Wallet, PiggyBank, Target } from 'lucide-react'
+import { Plus, TrendingUp, Calendar, DollarSign, Edit, Trash2, Search, Filter, Download, BarChart3, ArrowUpRight, Wallet, PiggyBank, Target, X } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
@@ -38,21 +38,32 @@ const sourceColors: Record<string, { bg: string, text: string, gradient: string 
   'Other': { bg: 'bg-muted', text: 'text-muted-foreground', gradient: 'from-gray-500 to-slate-500' }
 }
 
-interface Income {
+interface IncomeData {
   id: string
   amount: number
   source: string
   description?: string
   date: string
-  created_at: string
+  created_at?: string
+  category?: string
+  currency?: string
+  status?: string
+  frequency?: string
+  tax_deducted?: number | string
+  attachment_url?: string
+  recurring_id?: string
+  updated_at?: string
+  user_id?: string
 }
 
 export default function IncomePage() {
-  const [income, setIncome] = useState<Income[]>([])
+  const [income, setIncome] = useState<IncomeData[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [filteredIncome, setFilteredIncome] = useState<Income[]>([])
+  const [filteredIncome, setFilteredIncome] = useState<IncomeData[]>([])
   const [selectedSource, setSelectedSource] = useState('all')
+  const [editingIncome, setEditingIncome] = useState<IncomeData | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -60,12 +71,19 @@ export default function IncomePage() {
   }, [])
 
   useEffect(() => {
-    let filtered = income
+    let filtered = income.filter(item => 
+      item && 
+      typeof item.id === 'string' && 
+      typeof item.amount === 'number' && 
+      typeof item.source === 'string' &&
+      typeof item.date === 'string'
+    )
 
-    if (searchTerm) {
+    if (searchTerm && searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase().trim()
       filtered = filtered.filter(item =>
-        item.source.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.source.toLowerCase().includes(searchLower) ||
+        (item.description && item.description.toLowerCase().includes(searchLower)) ||
         item.amount.toString().includes(searchTerm)
       )
     }
@@ -79,16 +97,62 @@ export default function IncomePage() {
 
   const fetchIncome = async () => {
     try {
-      const { data, error } = await supabase
-        .from('income')
-        .select('*')
-        .order('date', { ascending: false })
-
-      if (error) throw error
-      setIncome(data || [])
+      // Get current user ID from localStorage
+      const userData = typeof window !== 'undefined' ? localStorage.getItem('user_data') : null
+      const userId = userData ? JSON.parse(userData).id : null
+      
+      console.log('🔍 Fetching income data for userId:', userId)
+      console.log('👤 User data from localStorage:', userData)
+      
+      if (!userId) {
+        console.warn('⚠️ No user ID found - user might not be logged in')
+        toast.error('Please log in to view income data')
+        setIncome([])
+        setLoading(false)
+        return
+      }
+      
+      const response = await incomeApi.getAll(userId)
+      console.log('📊 API Response:', response)
+      
+      if (response.data && Array.isArray(response.data)) {
+        console.log('📋 Raw income data:', response.data)
+        
+        // Validate and sanitize income data
+        const validIncome = response.data.filter(item => 
+          item && 
+          typeof item.id === 'string' && 
+          (typeof item.amount === 'number' || typeof item.amount === 'string') && 
+          typeof item.source === 'string' &&
+          typeof item.date === 'string'
+        ).map(item => ({
+          ...item,
+          amount: typeof item.amount === 'string' ? parseFloat(item.amount) : item.amount,
+          tax_deducted: item.tax_deducted ? (typeof item.tax_deducted === 'string' ? parseFloat(item.tax_deducted) : item.tax_deducted) : undefined
+        }))
+        
+        console.log('✅ Valid income data:', validIncome)
+        setIncome(validIncome)
+        
+        if (validIncome.length === 0) {
+          toast('No income records found. Add your first income!', {
+            icon: '💰',
+            style: {
+              background: '#10b981',
+              color: 'white',
+            }
+          })
+        }
+      } else {
+        console.log('⚠️ No data received from API')
+        setIncome([])
+      }
+      
     } catch (error: any) {
-      toast.error('Failed to fetch income data')
-      console.error('Error fetching income:', error)
+      const errorMessage = error?.message || 'Failed to fetch income data'
+      console.error('❌ Error fetching income:', error)
+      toast.error(errorMessage)
+      setIncome([]) // Set empty array on error to prevent UI crashes
     } finally {
       setLoading(false)
     }
@@ -100,19 +164,52 @@ export default function IncomePage() {
     }
 
     try {
-      const { error } = await supabase
-        .from('income')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
-
+      await incomeApi.delete(id)
       toast.success('Income deleted successfully')
-      fetchIncome()
+      fetchIncome() // Refresh the data
     } catch (error: any) {
-      toast.error('Failed to delete income')
+      const errorMessage = error?.message || 'Failed to delete income'
+      toast.error(errorMessage)
       console.error('Error deleting income:', error)
     }
+  }
+
+  const handleEdit = (incomeItem: IncomeData) => {
+    setEditingIncome(incomeItem)
+    setShowEditModal(true)
+  }
+
+  const handleUpdateIncome = async (data: any) => {
+    if (!editingIncome) return
+
+    try {
+      const response = await incomeApi.update(editingIncome.id, {
+        amount: parseFloat(data.amount),
+        source: data.source,
+        description: data.description || undefined,
+        date: data.date,
+        category: data.category || undefined,
+        currency: data.currency || undefined,
+        status: data.status || undefined,
+        frequency: data.frequency || undefined,
+        tax_deducted: data.tax_deducted ? parseFloat(data.tax_deducted) : undefined
+      })
+
+      if (response.data) {
+        toast.success('Income updated successfully!')
+        setShowEditModal(false)
+        setEditingIncome(null)
+        fetchIncome() // Refresh the data
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update income')
+      console.error('Error updating income:', error)
+    }
+  }
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false)
+    setEditingIncome(null)
   }
 
   const totalIncome = filteredIncome.reduce((sum, item) => sum + item.amount, 0)
@@ -121,6 +218,46 @@ export default function IncomePage() {
     return acc
   }, {} as Record<string, number>)
   const averageIncome = filteredIncome.length > 0 ? totalIncome / filteredIncome.length : 0
+  
+  // Calculate additional dynamic metrics
+  const highestIncome = filteredIncome.length > 0 ? Math.max(...filteredIncome.map(item => item.amount)) : 0
+  const lowestIncome = filteredIncome.length > 0 ? Math.min(...filteredIncome.map(item => item.amount)) : 0
+  const monthlyIncome = filteredIncome.reduce((acc, item) => {
+    const month = new Date(item.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    acc[month] = (acc[month] || 0) + item.amount
+    return acc
+  }, {} as Record<string, number>)
+  
+  // Calculate growth trend (compare last month with previous month)
+  const sortedByDate = [...filteredIncome].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  const currentDate = new Date()
+  const currentMonth = currentDate.getMonth()
+  const currentYear = currentDate.getFullYear()
+  const lastMonthIncome = sortedByDate
+    .filter(item => {
+      const itemDate = new Date(item.date)
+      return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+    })
+    .reduce((sum, item) => sum + item.amount, 0)
+  
+  const previousMonthIncome = sortedByDate
+    .filter(item => {
+      const itemDate = new Date(item.date)
+      const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1
+      const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear
+      return itemDate.getMonth() === prevMonth && itemDate.getFullYear() === prevYear
+    })
+    .reduce((sum, item) => sum + item.amount, 0)
+  
+  const growthRate = previousMonthIncome > 0 ? ((lastMonthIncome - previousMonthIncome) / previousMonthIncome) * 100 : 0
+  
+  // Safe calculations to prevent division by zero
+  const topSourceData = Object.keys(sourceTotals).length > 0 
+    ? Object.entries(sourceTotals).sort(([, a], [, b]) => b - a)[0]
+    : null
+  const topSourcePercentage = topSourceData && totalIncome > 0 
+    ? ((topSourceData[1] / totalIncome) * 100).toFixed(1)
+    : '0'
 
   if (loading) {
     return (
@@ -186,8 +323,17 @@ export default function IncomePage() {
                 From {filteredIncome.length} sources
               </p>
               <div className="mt-3 flex items-center text-sm">
-                <ArrowUpRight className="h-4 w-4 text-green-500 mr-1" />
-                <span className="text-green-500">Growing strong!</span>
+                {growthRate >= 0 ? (
+                  <>
+                    <ArrowUpRight className="h-4 w-4 text-green-500 mr-1" />
+                    <span className="text-green-500">{growthRate.toFixed(1)}% from last month</span>
+                  </>
+                ) : (
+                  <>
+                    <ArrowUpRight className="h-4 w-4 text-red-500 mr-1 rotate-180" />
+                    <span className="text-red-500">{Math.abs(growthRate).toFixed(1)}% from last month</span>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -206,8 +352,15 @@ export default function IncomePage() {
               <p className="text-xs text-muted-foreground mt-1">
                 Per transaction
               </p>
-              <div className="mt-3 w-full bg-muted rounded-full h-2">
-                <div className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full" style={{ width: '75%' }} />
+              <div className="mt-3 text-sm text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>Highest:</span>
+                  <span className="font-medium text-green-600">${highestIncome.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Lowest:</span>
+                  <span className="font-medium text-red-600">${lowestIncome.toLocaleString()}</span>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -221,17 +374,19 @@ export default function IncomePage() {
             </CardHeader>
             <CardContent>
               <div className="text-xl font-bold text-purple-600">
-                {Object.keys(sourceTotals).length > 0 
-                  ? Object.entries(sourceTotals).sort(([, a], [, b]) => b - a)[0][0]
-                  : 'None'
-                }
+                {topSourceData ? topSourceData[0] : 'None'}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Highest income source
               </p>
-              {Object.keys(sourceTotals).length > 0 && (
-                <div className="mt-3 text-sm font-medium text-purple-600">
-                  ${Object.entries(sourceTotals).sort(([, a], [, b]) => b - a)[0][1].toLocaleString()}
+              {topSourceData && (
+                <div className="mt-3">
+                  <div className="text-sm font-medium text-purple-600">
+                    ${topSourceData[1].toLocaleString()}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {topSourcePercentage}% of total
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -329,10 +484,16 @@ export default function IncomePage() {
                         Source
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Category
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Description
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Amount
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Status
                       </th>
                       <th className="px-6 py-4 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Actions
@@ -340,35 +501,79 @@ export default function IncomePage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {filteredIncome.map((item: Income) => (
-                      <tr key={item.id} className="hover:bg-muted/50 transition-colors duration-150">
+                    {filteredIncome.map((item: IncomeData) => (
+                      <tr key={item.id} className="hover:bg-muted/50 transition-colors duration-150 cursor-pointer" onClick={() => router.push(`/income/${item.id}`)}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground font-medium">
-                          {format(new Date(item.date), 'MMM dd, yyyy')}
+                          {item.date ? format(new Date(item.date), 'MMM dd, yyyy') : 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${sourceColors[item.source]?.bg || 'bg-muted'} ${sourceColors[item.source]?.text || 'text-foreground'}`}>
-                            {item.source}
+                            {item.source || 'Unknown'}
                           </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground">
-                          {item.description || <span className="text-muted-foreground italic">No description</span>}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-lg font-bold text-green-600">
-                            +${item.amount.toLocaleString()}
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {item.category || 'General'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <td className="px-6 py-4 text-sm text-muted-foreground max-w-xs truncate">
+                          {item.description ? item.description : <span className="text-muted-foreground italic">No description</span>}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span className="text-lg font-bold text-green-600">
+                              {item.currency || '$'}{typeof item.amount === 'number' ? item.amount.toLocaleString() : '0'}
+                            </span>
+                            {item.tax_deducted && (
+                              <span className="text-xs text-red-500">
+                                Tax: {item.currency || '$'}{typeof item.tax_deducted === 'number' ? item.tax_deducted.toLocaleString() : '0'}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            item.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                            item.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            item.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {item.status || 'Unknown'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex justify-end space-x-2">
-                            <Link href={`/income/${item.id}/edit`}>
-                              <Button variant="outline" size="sm" className="border-border hover:bg-accent text-foreground">
-                                <Edit className="h-4 w-4" />
+                            {item.attachment_url && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  window.open(item.attachment_url, '_blank')
+                                }}
+                                className="border-blue-500 hover:bg-blue-50 text-blue-600"
+                              >
+                                📎
                               </Button>
-                            </Link>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleDelete(item.id)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleEdit(item)
+                              }}
+                              className="border-border hover:bg-accent text-foreground"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDelete(item.id)
+                              }}
                               className="border-destructive hover:bg-destructive/10 text-destructive"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -384,7 +589,215 @@ export default function IncomePage() {
           </CardContent>
         </Card>
       </main>
+      
+      {/* Edit Modal */}
+      {showEditModal && editingIncome && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-border">
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <h2 className="text-xl font-semibold text-foreground">Edit Income</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCloseEditModal}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="p-6">
+              <EditIncomeForm
+                income={editingIncome}
+                onSubmit={handleUpdateIncome}
+                onCancel={handleCloseEditModal}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </AppLayout>
+  )
+}
+
+// Edit Income Form Component
+function EditIncomeForm({ income, onSubmit, onCancel }: { income: IncomeData; onSubmit: (data: any) => void; onCancel: () => void }) {
+  const [formData, setFormData] = useState({
+    amount: income.amount.toString(),
+    source: income.source,
+    description: income.description || '',
+    date: income.date ? income.date.split('T')[0] : '',
+    category: income.category || '',
+    currency: income.currency || 'USD',
+    status: income.status || 'confirmed',
+    frequency: income.frequency || '',
+    tax_deducted: income.tax_deducted ? income.tax_deducted.toString() : ''
+  })
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    
+    try {
+      await onSubmit(formData)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">Amount *</label>
+          <div className="relative">
+            <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <input
+              type="number"
+              step="0.01"
+              required
+              value={formData.amount}
+              onChange={(e) => handleChange('amount', e.target.value)}
+              className="pl-10 w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+              placeholder="0.00"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">Date *</label>
+          <div className="relative">
+            <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <input
+              type="date"
+              required
+              value={formData.date}
+              onChange={(e) => handleChange('date', e.target.value)}
+              className="pl-10 w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">Source *</label>
+          <select
+            required
+            value={formData.source}
+            onChange={(e) => handleChange('source', e.target.value)}
+            className="w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+          >
+            <option value="">Select source</option>
+            {incomeSources.map((source) => (
+              <option key={source} value={source}>{source}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">Category</label>
+          <input
+            type="text"
+            value={formData.category}
+            onChange={(e) => handleChange('category', e.target.value)}
+            className="w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+            placeholder="e.g., Job, Business"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">Currency</label>
+          <select
+            value={formData.currency}
+            onChange={(e) => handleChange('currency', e.target.value)}
+            className="w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+          >
+            <option value="USD">USD ($)</option>
+            <option value="EUR">EUR (€)</option>
+            <option value="GBP">GBP (£)</option>
+            <option value="RUPEE">RUPEE (₹)</option>
+            <option value="JPY">JPY (¥)</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">Status</label>
+          <select
+            value={formData.status}
+            onChange={(e) => handleChange('status', e.target.value)}
+            className="w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+          >
+            <option value="confirmed">Confirmed</option>
+            <option value="pending">Pending</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">Frequency</label>
+          <select
+            value={formData.frequency}
+            onChange={(e) => handleChange('frequency', e.target.value)}
+            className="w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+          >
+            <option value="">One-time</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">Tax Deducted</label>
+          <div className="relative">
+            <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <input
+              type="number"
+              step="0.01"
+              value={formData.tax_deducted}
+              onChange={(e) => handleChange('tax_deducted', e.target.value)}
+              className="pl-10 w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+              placeholder="0.00"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-2">Description</label>
+        <textarea
+          value={formData.description}
+          onChange={(e) => handleChange('description', e.target.value)}
+          rows={3}
+          className="w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background resize-none"
+          placeholder="Add any additional notes..."
+        />
+      </div>
+
+      <div className="flex justify-end space-x-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          className="border-border hover:bg-accent"
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+        >
+          {isSubmitting ? 'Updating...' : 'Update Income'}
+        </Button>
+      </div>
+    </form>
   )
 }

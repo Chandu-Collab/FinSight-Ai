@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
+import { expenseApi } from '@/lib/api/production'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { Plus, TrendingDown, Calendar, CreditCard, Edit, Trash2, Search, Filter, Download, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, Wallet } from 'lucide-react'
+import { Plus, TrendingDown, Calendar, CreditCard, Edit, Trash2, Search, Filter, Download, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, Wallet, Eye } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
@@ -14,28 +14,30 @@ import { cn } from '@/lib/utils'
 
 interface Expense {
   id: string
+  user_id: string
   amount: number
   category: string
   description?: string
   date: string
-  created_at: string
+  payment_method?: string
+  merchant?: string
+  receipt_url?: string
+  recurring?: boolean
+  tags?: string
+  status?: string
+  notes?: string
+  created_at?: string
+  updated_at?: string
 }
 
 const expenseCategories = [
-  'Food & Dining',
-  'Transportation',
-  'Shopping',
-  'Entertainment',
-  'Bills & Utilities',
-  'Healthcare',
-  'Education',
-  'Travel',
-  'Subscriptions',
-  'Other'
+  'Food', 'Transportation', 'Shopping', 'Entertainment', 
+  'Bills & Utilities', 'Healthcare', 'Education', 'Travel',
+  'Subscriptions', 'Other'
 ]
 
 const categoryIcons: Record<string, string> = {
-  'Food & Dining': '🍔',
+  'Food': '🍔',
   'Transportation': '🚗',
   'Shopping': '🛍',
   'Entertainment': '🎬',
@@ -48,7 +50,7 @@ const categoryIcons: Record<string, string> = {
 }
 
 const categoryColors: Record<string, { bg: string, text: string, gradient: string }> = {
-  'Food & Dining': { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-800 dark:text-orange-200', gradient: 'from-orange-500 to-red-500' },
+  'Food': { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-800 dark:text-orange-200', gradient: 'from-orange-500 to-red-500' },
   'Transportation': { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-800 dark:text-blue-200', gradient: 'from-blue-500 to-cyan-500' },
   'Shopping': { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-800 dark:text-purple-200', gradient: 'from-purple-500 to-pink-500' },
   'Entertainment': { bg: 'bg-pink-100 dark:bg-pink-900/30', text: 'text-pink-800 dark:text-pink-200', gradient: 'from-pink-500 to-rose-500' },
@@ -92,15 +94,18 @@ export default function ExpensesPage() {
 
   const fetchExpenses = async () => {
     try {
-      const { data, error } = await supabase
-        .from('expenses')
-        .select('*')
-        .order('date', { ascending: false })
-
-      if (error) throw error
-      setExpenses(data || [])
+      const userData = typeof window !== 'undefined' ? localStorage.getItem('user_data') : null
+      const userId = userData ? JSON.parse(userData).id : null
+      
+      if (!userId) {
+        toast.error('Please log in to view expenses')
+        return
+      }
+      
+      const response = await expenseApi.getAll(userId)
+      setExpenses(response.data || [])
     } catch (error: any) {
-      toast.error('Failed to fetch expense data')
+      toast.error(error.message || 'Failed to fetch expense data')
       console.error('Error fetching expenses:', error)
     } finally {
       setLoading(false)
@@ -113,25 +118,37 @@ export default function ExpensesPage() {
     }
 
     try {
-      const { error } = await supabase
-        .from('expenses')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
-
+      await expenseApi.delete(id)
       toast.success('Expense deleted successfully')
       fetchExpenses()
     } catch (error: any) {
-      toast.error('Failed to delete expense')
+      toast.error(error.message || 'Failed to delete expense')
       console.error('Error deleting expense:', error)
     }
   }
 
-  const totalExpenses = filteredExpenses.reduce((sum, item) => sum + item.amount, 0)
+  const handleView = async (id: string) => {
+    try {
+      const response = await expenseApi.getById(id)
+      if (response.data) {
+        // You can show a modal with full expense details here
+        toast.success('Expense details loaded')
+        console.log('Full expense data:', response.data)
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to fetch expense details')
+    }
+  }
+
+  const totalExpenses = filteredExpenses.reduce((sum, item) => {
+    const amount = typeof item.amount === 'string' ? parseFloat(item.amount) : item.amount;
+    return sum + (isNaN(amount) ? 0 : amount);
+  }, 0)
   const categoryTotals = filteredExpenses.reduce((acc, item) => {
-    acc[item.category] = (acc[item.category] || 0) + item.amount
-    return acc
+    const amount = typeof item.amount === 'string' ? parseFloat(item.amount) : item.amount;
+    const validAmount = isNaN(amount) ? 0 : amount;
+    acc[item.category] = (acc[item.category] || 0) + validAmount;
+    return acc;
   }, {} as Record<string, number>)
 
   if (loading) {
@@ -191,15 +208,15 @@ export default function ExpensesPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-red-600">
+              <div className="text-3xl font-bold text-red-600 truncate">
                 ${totalExpenses.toLocaleString()}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                From {filteredExpenses.length} transactions
+              <p className="text-xs text-muted-foreground mt-1 truncate">
+                {filteredExpenses.length > 999 ? `${(filteredExpenses.length / 1000).toFixed(1)}k+` : `${filteredExpenses.length} transactions`}
               </p>
               <div className="mt-3 flex items-center text-sm">
                 <ArrowUpRight className="h-4 w-4 text-red-500 mr-1" />
-                <span className="text-red-500">12% from last month</span>
+                <span className="text-red-500 truncate">12% from last month</span>
               </div>
             </CardContent>
           </Card>
@@ -212,15 +229,15 @@ export default function ExpensesPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-orange-600">
-                ${filteredExpenses.length > 0 ? (totalExpenses / filteredExpenses.length).toFixed(2) : '0.00'}
+              <div className="text-3xl font-bold text-orange-600 truncate">
+                ${filteredExpenses.length > 0 && totalExpenses > 0 ? (totalExpenses / filteredExpenses.length).toFixed(2) : '0.00'}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1 truncate">
                 Per transaction
               </p>
               <div className="mt-3 flex items-center text-sm">
                 <ArrowDownRight className="h-4 w-4 text-green-500 mr-1" />
-                <span className="text-green-500">8% decrease</span>
+                <span className="text-green-500 truncate">8% decrease</span>
               </div>
             </CardContent>
           </Card>
@@ -233,17 +250,19 @@ export default function ExpensesPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold text-purple-600">
+              <div className="text-xl font-bold text-purple-600 truncate">
                 {Object.keys(categoryTotals).length > 0 
-                  ? Object.entries(categoryTotals).sort(([, a], [, b]) => b - a)[0][0]
+                  ? Object.entries(categoryTotals).sort(([, a], [, b]) => b - a)[0][0].length > 15 
+                    ? `${Object.entries(categoryTotals).sort(([, a], [, b]) => b - a)[0][0].substring(0, 15)}...`
+                    : Object.entries(categoryTotals).sort(([, a], [, b]) => b - a)[0][0]
                   : 'None'
                 }
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1 truncate">
                 Highest spending category
               </p>
               {Object.keys(categoryTotals).length > 0 && (
-                <div className="mt-3 text-sm font-medium text-purple-600">
+                <div className="mt-3 text-sm font-medium text-purple-600 truncate">
                   ${Object.entries(categoryTotals).sort(([, a], [, b]) => b - a)[0][1].toLocaleString()}
                 </div>
               )}
@@ -302,10 +321,12 @@ export default function ExpensesPage() {
         {/* Enhanced Expense List */}
         <Card className="bg-card/80 backdrop-blur-sm border-2 border-border/50 shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between pb-4">
-            <CardTitle className="text-lg font-semibold text-foreground">Expense Records</CardTitle>
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <BarChart3 className="h-4 w-4" />
-              <span>{filteredExpenses.length} transactions</span>
+            <CardTitle className="text-lg font-semibold text-foreground truncate">Expense Records</CardTitle>
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground min-w-0">
+              <BarChart3 className="h-4 w-4 flex-shrink-0" />
+              <span className="truncate">
+                {filteredExpenses.length > 999 ? `${(filteredExpenses.length / 1000).toFixed(1)}k+` : `${filteredExpenses.length} transactions`}
+              </span>
             </div>
           </CardHeader>
           <CardContent>
@@ -385,6 +406,15 @@ export default function ExpensesPage() {
                         </td>
                         <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
                           <div className="flex justify-end space-x-1 sm:space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleView(expense.id)}
+                              className="border-border hover:bg-accent text-foreground h-8 w-8 sm:h-auto sm:w-auto sm:px-3"
+                            >
+                              <Eye className="h-4 w-4" />
+                              <span className="hidden sm:inline ml-1">View</span>
+                            </Button>
                             <Link href={`/expenses/${expense.id}/edit`}>
                               <Button variant="outline" size="sm" className="border-border hover:bg-accent text-foreground h-8 w-8 sm:h-auto sm:w-auto sm:px-3">
                                 <Edit className="h-4 w-4" />
