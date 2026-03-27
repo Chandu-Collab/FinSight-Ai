@@ -36,7 +36,6 @@ interface DashboardStats {
 
 export default function DashboardPage() {
   const { user } = useAuth()
-  console.log('🔍 Dashboard rendering with user:', user)
   const [stats, setStats] = useState<DashboardStats>({
     totalIncome: 0,
     totalExpenses: 0,
@@ -48,6 +47,7 @@ export default function DashboardPage() {
     predictions: []
   })
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchDashboardData()
@@ -56,31 +56,24 @@ export default function DashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true)
-      // Mock data for now - replace with actual API calls
-      const mockStats: DashboardStats = {
-        totalIncome: 8500,
-        totalExpenses: 5200,
-        currentSavings: 3300,
-        monthlyBudget: 6000,
-        budgetUsed: 5200,
-        recentTransactions: [
-          { id: 1, type: 'expense', amount: 250, category: 'Food', date: '2024-03-25', description: 'Grocery shopping' },
-          { id: 2, type: 'income', amount: 3500, source: 'Salary', date: '2024-03-24', description: 'Monthly salary' },
-          { id: 3, type: 'expense', amount: 120, category: 'Transport', date: '2024-03-23', description: 'Gas refill' },
-          { id: 4, type: 'expense', amount: 80, category: 'Entertainment', date: '2024-03-22', description: 'Movie tickets' },
-        ],
-        savingsGoals: [
-          { id: 1, title: 'Emergency Fund', target: 10000, current: 6500, deadline: '2024-12-31' },
-          { id: 2, title: 'Vacation', target: 3000, current: 1200, deadline: '2024-08-15' },
-        ],
-        predictions: [
-          { month: 'April 2024', predicted: 5500, confidence: 85 },
-          { month: 'May 2024', predicted: 5800, confidence: 75 },
-        ]
+      // TODO: Replace with actual API calls to fetch real dashboard data
+      // For now, show loading state until APIs are implemented
+      
+      // Initialize with empty state - no mock data
+      const emptyStats: DashboardStats = {
+        totalIncome: 0,
+        totalExpenses: 0,
+        currentSavings: 0,
+        monthlyBudget: 0,
+        budgetUsed: 0,
+        recentTransactions: [],
+        savingsGoals: [],
+        predictions: []
       }
-      setStats(mockStats)
+      setStats(emptyStats)
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
+      setError('Failed to load dashboard data')
     } finally {
       setLoading(false)
     }
@@ -97,6 +90,25 @@ export default function DashboardPage() {
                 <div key={i} className="h-32 bg-muted rounded"></div>
               ))}
             </div>
+          </div>
+        </div>
+      </AppLayout>
+    )
+  }
+
+  if (error) {
+    return (
+      <AppLayout>
+        <div className="space-y-8">
+          <div className="bg-destructive/10 border border-destructive rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-destructive mb-2">Error Loading Dashboard</h3>
+            <p className="text-muted-foreground">{error}</p>
+            <button 
+              onClick={fetchDashboardData}
+              className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+            >
+              Retry
+            </button>
           </div>
         </div>
       </AppLayout>
