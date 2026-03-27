@@ -45,13 +45,12 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      // Hash password (in production, use proper hashing)
-      const password_hash = passwordUtils.encode(password)
+      // Send plain password for secure backend hashing
+      const password_hash = password
       
       console.log('🔍 Login Debug Info:')
       console.log('  Email:', email)
       console.log('  Password:', password)
-      console.log('  Password Hash:', password_hash)
       console.log('  API URL:', `http://localhost:8000/api/login`)
       
       // Initiate login with OTP

@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
-import TransactionForm from '@/components/forms/TransactionForm'
+import { incomeApi, Income } from '@/lib/api/production'
+import { IncomeForm } from '@/components/forms/IncomeForm'
 import { IncomeFormData } from '@/lib/validations/transaction'
 import toast from 'react-hot-toast'
 
-interface Income {
+interface IncomeData {
   id: string
   amount: number
   source: string
@@ -17,7 +17,7 @@ interface Income {
 }
 
 export default function EditIncomePage() {
-  const [income, setIncome] = useState<Income | null>(null)
+  const [income, setIncome] = useState<IncomeData | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const router = useRouter()
@@ -30,22 +30,23 @@ export default function EditIncomePage() {
 
   const fetchIncome = async () => {
     try {
-      const { data, error } = await supabase
-        .from('income')
-        .select('*')
-        .eq('id', id)
-        .single()
-
-      if (error) throw error
-
-      if (data) {
+      const response = await incomeApi.getById(id)
+      
+      if (response.data) {
         setIncome({
-          ...data,
-          date: data.date ? data.date.split('T')[0] : ''
+          id: response.data.id,
+          amount: response.data.amount,
+          source: response.data.source,
+          description: response.data.description,
+          date: response.data.date ? response.data.date.split('T')[0] : '',
+          created_at: response.data.created_at || response.data.date
         })
+      } else {
+        toast.error('Income record not found')
+        router.push('/income')
       }
     } catch (error: any) {
-      toast.error('Failed to fetch income record')
+      toast.error(error.message || 'Failed to fetch income record')
       console.error('Error fetching income:', error)
       router.push('/income')
     } finally {
@@ -57,20 +58,17 @@ export default function EditIncomePage() {
     setSaving(true)
 
     try {
-      const { error } = await supabase
-        .from('income')
-        .update({
-          amount: parseFloat(data.amount),
-          source: data.source,
-          description: data.description || null,
-          date: data.date
-        })
-        .eq('id', id)
+      const response = await incomeApi.update(id, {
+        amount: parseFloat(data.amount),
+        source: data.source,
+        description: data.description || undefined,
+        date: data.date
+      })
 
-      if (error) throw error
-
-      toast.success('Income updated successfully!')
-      router.push('/income')
+      if (response.data) {
+        toast.success('Income updated successfully!')
+        router.push('/income')
+      }
     } catch (error: any) {
       toast.error(error.message || 'Failed to update income')
       console.error('Error updating income:', error)
@@ -89,17 +87,11 @@ export default function EditIncomePage() {
     }
 
     try {
-      const { error } = await supabase
-        .from('income')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
-
+      await incomeApi.delete(id)
       toast.success('Income deleted successfully!')
       router.push('/income')
     } catch (error: any) {
-      toast.error('Failed to delete income')
+      toast.error(error.message || 'Failed to delete income')
       console.error('Error deleting income:', error)
     }
   }
@@ -137,30 +129,31 @@ export default function EditIncomePage() {
   }
 
   return (
-    <div>
-      <TransactionForm
-        type="income"
-        initialData={initialData}
-        onSubmit={handleSubmit}
-        onCancel={handleCancel}
-        loading={saving}
-        title="Edit Income"
-      />
-      
-      {/* Delete Section */}
-      <div className="max-w-2xl mx-auto mt-6">
-        <div className="bg-white rounded-lg shadow-sm border border-red-200 p-6">
-          <h3 className="text-lg font-medium text-red-600 mb-4">Danger Zone</h3>
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              Once you delete an income record, there is no going back. Please be certain.
-            </p>
-            <button
-              onClick={handleDelete}
-              className="px-4 py-2 border border-red-300 text-red-600 rounded-md hover:bg-red-50 transition-colors"
-            >
-              Delete Income Record
-            </button>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <IncomeForm
+          initialData={initialData}
+          onSubmit={handleSubmit}
+          onCancel={handleCancel}
+          loading={saving}
+          title="Edit Income"
+        />
+        
+        {/* Delete Section */}
+        <div className="max-w-2xl mx-auto mt-6">
+          <div className="bg-white rounded-lg shadow-sm border border-red-200 p-6">
+            <h3 className="text-lg font-medium text-red-600 mb-4">Danger Zone</h3>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Once you delete an income record, there is no going back. Please be certain.
+              </p>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 border border-red-300 text-red-600 rounded-md hover:bg-red-50 transition-colors"
+              >
+                Delete Income Record
+              </button>
+            </div>
           </div>
         </div>
       </div>

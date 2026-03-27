@@ -1,22 +1,28 @@
 'use client'
 
-import { useState } from 'react'
+import dynamic from 'next/dynamic'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { AppLayout } from '@/components/layout/AppLayout'
-import { useTheme } from '@/contexts/ThemeContext'
 import { Moon, Sun, Monitor, Check, Bell, Globe, Shield, HelpCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 
+// Import AppLayout dynamically to avoid SSR issues
+const AppLayout = dynamic(() => import('@/components/layout/AppLayout').then(mod => ({ default: mod.AppLayout })), { ssr: false })
+
 export default function SettingsPage() {
-  const { theme, setTheme, isDarkMode } = useTheme()
+  const [mounted, setMounted] = useState(false)
   const [notifications, setNotifications] = useState(true)
   const [autoSave, setAutoSave] = useState(true)
   const [language, setLanguage] = useState('en')
+  const [theme, setTheme] = useState('light')
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
     if (newTheme === 'system') {
-      // Check system preference
       const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
       setTheme(systemPrefersDark ? 'dark' : 'light')
       toast.success('Theme set to system preference')
@@ -29,6 +35,23 @@ export default function SettingsPage() {
   const handleNotificationToggle = () => {
     setNotifications(!notifications)
     toast.success(notifications ? 'Notifications disabled' : 'Notifications enabled')
+  }
+
+  if (!mounted) {
+    return (
+      <AppLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold text-foreground">Settings</h1>
+          </div>
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-muted rounded"></div>
+            <div className="h-32 bg-muted rounded"></div>
+            <div className="h-32 bg-muted rounded"></div>
+          </div>
+        </div>
+      </AppLayout>
+    )
   }
 
   const handleAutoSaveToggle = () => {
@@ -115,7 +138,7 @@ export default function SettingsPage() {
               <div className="border-t pt-6 border-border">
                 <h3 className="text-sm font-medium text-foreground mb-4">Current Theme</h3>
                 <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
-                  {isDarkMode ? (
+                  {theme === 'dark' ? (
                     <Moon className="h-5 w-5 text-muted-foreground" />
                   ) : (
                     <Sun className="h-5 w-5 text-muted-foreground" />

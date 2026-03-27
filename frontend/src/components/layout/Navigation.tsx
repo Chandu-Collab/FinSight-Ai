@@ -91,19 +91,21 @@ export function Navigation() {
 
           {/* User section */}
           <div className="p-4 border-t border-border">
-            <div className="flex items-center mb-4">
-              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                <User className="h-4 w-4 text-primary" />
+            <Link href="/profile" className="block">
+              <div className="flex items-center mb-4 p-2 rounded-md hover:bg-accent transition-colors">
+                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                  <User className="h-4 w-4 text-primary" />
+                </div>
+                <div className="ml-3 flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {user?.name || user?.email}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {user?.email}
+                  </p>
+                </div>
               </div>
-              <div className="ml-3 flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">
-                  {user?.name || user?.email}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {user?.email}
-                </p>
-              </div>
-            </div>
+            </Link>
             
             <div className="flex space-x-2">
               <Button variant="outline" size="sm" className="flex-1">

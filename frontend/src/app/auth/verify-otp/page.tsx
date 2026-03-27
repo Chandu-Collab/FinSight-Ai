@@ -14,7 +14,7 @@ export default function VerifyOtpPage() {
   const [type, setType] = useState('login')
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { login } = useAuth()
+  const { setAuthState } = useAuth()
   
   // Get URL parameters on client side only
   useEffect(() => {
@@ -56,45 +56,26 @@ export default function VerifyOtpPage() {
         console.log('🔍 Result user:', result.user)
         console.log('🔍 Result keys:', Object.keys(result))
         
-        // Extract user data from JWT token if not provided in response
-        let userData = result.user
-        if (!userData && result.token) {
-          try {
-            const payload = JSON.parse(atob(result.token.split('.')[1]))
-            userData = {
-              id: payload.user_id || payload.sub || '',
-              email: payload.email || email,
-              name: payload.name || ''
-            }
-            console.log('🔍 Extracted user data from JWT:', userData)
-          } catch (error) {
-            console.error('❌ Failed to extract user from JWT:', error)
-            userData = { id: '', email: email, name: '' }
-          }
-        }
-        
-        if (result.token && userData) {
+        // Only proceed if backend provides real user data - no fallbacks
+        if (result.token && result.user) {
           toast.success('Login successful! Redirecting to dashboard...')
           
-          // Store auth data immediately to prevent hydration issues
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('jwt_token', result.token)
-            localStorage.setItem('user_data', JSON.stringify(userData))
-            console.log('🔍 Auth data stored directly in localStorage')
-          }
+          // Use AuthContext to properly set auth state with real API data
+          setAuthState(result.token, result.user)
+          console.log('🔍 Auth state set via AuthContext with real API data')
           
           // Set navigation state to prevent hydration issues
           setIsNavigating(true)
           
-          // Navigate immediately without updating React state to prevent hydration mismatch
+          // Navigate using Next.js router for proper state management
           setTimeout(() => {
             console.log('🔍 Navigating to dashboard...')
-            window.location.href = '/' // Use direct navigation to prevent hydration issues
-          }, 2000) // Increased delay to allow auth state to settle
+            router.push('/') // Use Next.js router instead of direct navigation
+          }, 1500) // Reduced delay since we're using proper state management
         } else {
-          console.error('❌ No token or user in result:', result)
+          console.error('❌ No token or user data from API:', result)
           console.error('❌ Available keys:', Object.keys(result))
-          toast.error('Invalid OTP verification response')
+          toast.error('Invalid response from server. Please try again.')
         }
       }
     } catch (error: any) {

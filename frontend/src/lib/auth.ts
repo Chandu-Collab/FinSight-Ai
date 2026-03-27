@@ -54,6 +54,20 @@ export interface User {
   id: string
   email: string
   name?: string
+  profile_picture?: string
+  phone_number?: string
+  address?: string
+  date_of_birth?: string
+  gender?: string
+  status?: string
+  role?: string
+  preferences?: any
+  last_login?: string
+  email_verified?: boolean
+  two_factor_enabled?: boolean
+  bio?: string
+  created_at?: string
+  updated_at?: string
 }
 
 class AuthService {
@@ -151,17 +165,23 @@ class AuthService {
     console.log('🔍 Response Body:', result)
     
     // Store JWT token and user data if provided
-    if (result.token) {
-      // Use the user data from the response if available, otherwise create a basic user object
-      const userData = result.user || { id: '', email: data.email, name: '' }
-      this.setToken(result.token, userData)
-      console.log('✅ Token and user stored successfully:', { token: result.token, user: userData })
+    if (result.token && result.user) {
+      // Only proceed if real user data is provided by API
+      this.setToken(result.token, result.user)
+      console.log('✅ Token and real user data stored successfully:', { 
+        token: result.token.substring(0, 20) + '...', 
+        user: {
+          id: result.user.id,
+          email: result.user.email,
+          name: result.user.name
+        }
+      })
       
       // Return the complete result with user data
       return result
     } else {
-      console.error('❌ No token in response:', result)
-      return result
+      console.error('❌ No token or user data in response:', result)
+      throw new Error('Invalid response from server: missing token or user data')
     }
   }
 

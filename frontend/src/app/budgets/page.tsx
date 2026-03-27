@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
+import { getBudgets, deleteBudget } from '@/lib/api/budgets'
+import { getCurrentUserId, isAuthenticated, setupDemoUser } from '@/lib/utils/user'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { AppLayout } from '@/components/layout/AppLayout'
@@ -58,63 +59,61 @@ export default function BudgetsPage() {
   const [budgets, setBudgets] = useState<BudgetWithStatus[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'))
+  // Check authentication and get user ID dynamically using user utility
+  const [rawBudgetData, setRawBudgetData] = useState<any>(null)
+  const [userId, setUserId] = useState('')
   const router = useRouter()
 
+  // Get user ID from user utility with authentication check
   useEffect(() => {
-    fetchBudgets()
-  }, [selectedMonth])
+    if (!isAuthenticated()) {
+      // For development, set up demo user automatically
+      setupDemoUser();
+      toast.success('Demo user set up for development');
+    }
+    
+    const userId = getCurrentUserId();
+    setUserId(userId);
+  }, [router])
 
-  const fetchBudgets = async () => {
+  useEffect(() => {
+    if (userId) {
+      fetchBudgetsData()
+    }
+  }, [selectedMonth, userId])
+
+  const fetchBudgetsData = async () => {
+    setLoading(true)
     try {
-      const { data: budgetsData, error: budgetsError } = await supabase
-        .from('budgets')
-        .select('*')
-        .eq('month', selectedMonth)
-        .order('created_at', { ascending: false })
-
-      if (budgetsError) throw budgetsError
-
-      const budgetsWithStatus: BudgetWithStatus[] = await Promise.all(
-        (budgetsData || []).map(async (budget) => {
-          // Calculate actual spending for this budget
-          const monthStart = startOfMonth(new Date(selectedMonth))
-          const monthEnd = endOfMonth(new Date(selectedMonth))
-
-          const { data: expensesData, error: expensesError } = await supabase
-            .from('expenses')
-            .select('amount')
-            .eq('category', budget.category)
-            .gte('date', monthStart.toISOString().split('T')[0])
-            .lte('date', monthEnd.toISOString().split('T')[0])
-
-          if (expensesError) throw expensesError
-
-          const spent = expensesData?.reduce((sum, expense) => sum + expense.amount, 0) || 0
-          const percentage = (spent / budget.amount) * 100
-          const remaining = budget.amount - spent
-
-          let status: 'safe' | 'warning' | 'danger' | 'exceeded'
-          if (percentage >= 100) status = 'exceeded'
-          else if (percentage >= 90) status = 'danger'
-          else if (percentage >= 75) status = 'warning'
-          else status = 'safe'
-
-          return {
-            ...budget,
-            spent,
-            percentage,
-            status,
-            remaining
-          }
-        })
-      )
-
-      setBudgets(budgetsWithStatus)
+      // Call backend with user_id and month
+      const res = await getBudgets(userId, selectedMonth)
+      const budgetsData = res.data || []
+      // Calculate status for each budget, ensure numbers are valid
+      const budgetsWithStatus: BudgetWithStatus[] = budgetsData.map((budget: Budget) => {
+        const amount = Number(budget.amount) || 0;
+        const spent = Number(budget.spent) || 0;
+        const percentage = amount > 0 ? (spent / amount) * 100 : 0;
+        const remaining = amount - spent;
+        let status: 'safe' | 'warning' | 'danger' | 'exceeded';
+        if (percentage >= 100) status = 'exceeded';
+        else if (percentage >= 90) status = 'danger';
+        else if (percentage >= 75) status = 'warning';
+        else status = 'safe';
+        return {
+          ...budget,
+          amount,
+          spent,
+          percentage,
+          status,
+          remaining
+        };
+      });
+      setBudgets(budgetsWithStatus);
     } catch (error: any) {
-      toast.error('Failed to fetch budget data')
-      console.error('Error fetching budgets:', error)
+      toast.error('Failed to fetch budget data');
+      console.error('Error fetching budgets:', error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -148,8 +147,8 @@ export default function BudgetsPage() {
     }
   }
 
-  const totalBudgeted = budgets.reduce((sum, budget) => sum + budget.amount, 0)
-  const totalSpent = budgets.reduce((sum, budget) => sum + budget.spent, 0)
+  const totalBudgeted = budgets.reduce((sum, budget) => sum + (Number(budget.amount) || 0), 0)
+  const totalSpent = budgets.reduce((sum, budget) => sum + (Number(budget.spent) || 0), 0)
   const totalRemaining = totalBudgeted - totalSpent
   const overallPercentage = totalBudgeted > 0 ? (totalSpent / totalBudgeted) * 100 : 0
 
@@ -464,15 +463,9 @@ export default function BudgetsPage() {
 
   async function handleDelete(id: string) {
     try {
-      const { error } = await supabase
-        .from('budgets')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
-
+      await deleteBudget(id)
       toast.success('Budget deleted successfully')
-      fetchBudgets()
+      fetchBudgetsData()
     } catch (error: any) {
       toast.error('Failed to delete budget')
       console.error('Error deleting budget:', error)
