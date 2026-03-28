@@ -6,11 +6,12 @@ import { Target, Plus, Calendar } from 'lucide-react'
 import { formatCurrency, calculatePercentage, getDaysUntilDeadline } from '@/lib/utils'
 
 interface Goal {
-  id: number
+  id: string
   title: string
-  target: number
-  current: number
-  deadline?: string
+  target_amount: number
+  current_amount: number
+  target_date?: string
+  name?: string
 }
 
 interface SavingsGoalsProps {
@@ -24,18 +25,18 @@ export function SavingsGoals({ goals }: SavingsGoalsProps) {
     return 'bg-blue-500 dark:bg-blue-400'
   }
 
-  const getDeadlineText = (deadline?: string) => {
-    if (!deadline) return 'No deadline'
-    const daysLeft = getDaysUntilDeadline(deadline)
+  const getDeadlineText = (target_date?: string) => {
+    if (!target_date) return 'No deadline'
+    const daysLeft = getDaysUntilDeadline(target_date)
     if (daysLeft < 0) return 'Overdue'
     if (daysLeft === 0) return 'Due today'
     if (daysLeft === 1) return '1 day left'
     return `${daysLeft} days left`
   }
 
-  const getDeadlineColor = (deadline?: string) => {
-    if (!deadline) return 'text-muted-foreground'
-    const daysLeft = getDaysUntilDeadline(deadline)
+  const getDeadlineColor = (target_date?: string) => {
+    if (!target_date) return 'text-muted-foreground'
+    const daysLeft = getDaysUntilDeadline(target_date)
     if (daysLeft < 0) return 'text-red-600 dark:text-red-400'
     if (daysLeft <= 7) return 'text-yellow-600 dark:text-yellow-400'
     return 'text-muted-foreground'
@@ -55,23 +56,24 @@ export function SavingsGoals({ goals }: SavingsGoalsProps) {
 
       <div className="space-y-4">
         {goals.map((goal) => {
-          const percentage = calculatePercentage(goal.current, goal.target)
-          const remaining = goal.target - goal.current
+          const percentage = calculatePercentage(goal.current_amount, goal.target_amount)
+          const remaining = goal.target_amount - goal.current_amount
+          const goalTitle = goal.title || goal.name || 'Untitled Goal'
 
           return (
             <div key={goal.id} className="p-4 border border-border rounded-lg bg-card text-card-foreground">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h4 className="font-medium text-card-foreground">{goal.title}</h4>
+                  <h4 className="font-medium text-card-foreground">{goalTitle}</h4>
                   <p className="text-sm text-muted-foreground">
-                    {formatCurrency(goal.current)} of {formatCurrency(goal.target)}
+                    {formatCurrency(goal.current_amount)} of {formatCurrency(goal.target_amount)}
                   </p>
                 </div>
-                {goal.deadline && (
+                {goal.target_date && (
                   <div className="flex items-center text-sm">
                     <Calendar className="h-3 w-3 mr-1" />
-                    <span className={getDeadlineColor(goal.deadline)}>
-                      {getDeadlineText(goal.deadline)}
+                    <span className={getDeadlineColor(goal.target_date)}>
+                      {getDeadlineText(goal.target_date)}
                     </span>
                   </div>
                 )}
