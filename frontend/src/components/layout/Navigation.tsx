@@ -19,6 +19,7 @@ import {
   X,
   Bell,
   User,
+  Repeat,
 } from 'lucide-react'
 
 const navigation = [
@@ -26,6 +27,7 @@ const navigation = [
   { name: 'Income', href: '/income', icon: DollarSign },
   { name: 'Expenses', href: '/expenses', icon: CreditCard },
   { name: 'Budgets', href: '/budgets', icon: Target },
+  { name: 'Recurring', href: '/recurring', icon: Repeat },
   { name: 'Savings Goals', href: '/savings-goals', icon: Target },
   { name: 'Reports', href: '/reports', icon: FileText },
   { name: 'Settings', href: '/settings', icon: Settings },

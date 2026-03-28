@@ -1,31 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase/client'
+import { recurringApi, incomeApi, type RecurringTransaction, type Income } from '@/lib/api/production'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, Repeat, Calendar, DollarSign, TrendingUp, TrendingDown, Play, Pause, Edit, Trash2 } from 'lucide-react'
+import { AppLayout } from '@/components/layout/AppLayout'
+import { Plus, Repeat, Calendar, DollarSign, TrendingUp, TrendingDown, Play, Pause, Edit, Trash2, Wallet, Download, ArrowUpRight } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { format, differenceInDays, isAfter, isBefore, addDays, addWeeks, addMonths, addYears } from 'date-fns'
-
-interface RecurringTransaction {
-  id: string
-  name: string
-  type: 'income' | 'expense'
-  amount: number
-  source?: string
-  category?: string
-  description?: string
-  frequency: 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'bimonthly' | 'quarterly' | 'yearly'
-  start_date: string
-  end_date?: string
-  next_date: string
-  count_occurrences: number
-  current_occurrence: number
-  is_active: boolean
-  created_at: string
-}
+import { cn } from '@/lib/utils'
 
 interface RecurringTransactionWithDetails extends RecurringTransaction {
   formattedAmount: string
@@ -38,10 +22,14 @@ interface RecurringTransactionWithDetails extends RecurringTransaction {
   progressPercentage: number
   daysUntilNext: number
   isOverdue: boolean
+  current_occurrence: number
+  run_count: number
+  count_occurrences?: number
 }
 
 export default function RecurringTransactionsPage() {
   const [recurringTransactions, setRecurringTransactions] = useState<RecurringTransactionWithDetails[]>([])
+  const [incomeData, setIncomeData] = useState<Income[]>([])
   const [loading, setLoading] = useState(true)
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all')
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'paused' | 'completed'>('all')
@@ -52,32 +40,81 @@ export default function RecurringTransactionsPage() {
 
   const fetchRecurringTransactions = async () => {
     try {
-      const { data, error } = await supabase
-        .from('recurring_transactions')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-
-      const processedTransactions = (data || []).map(processRecurringTransaction)
-      setRecurringTransactions(processedTransactions)
+      // Get current user ID from localStorage
+      const userData = typeof window !== 'undefined' ? localStorage.getItem('user_data') : null
+      const userId = userData ? JSON.parse(userData).id : null
+      
+      console.log('🔍 Fetching recurring transactions for userId:', userId)
+      console.log('👤 User data from localStorage:', userData)
+      
+      if (!userId) {
+        console.warn('⚠️ No user ID found - user might not be logged in')
+        toast.error('Please log in to view recurring transactions')
+        setRecurringTransactions([])
+        setIncomeData([])
+        setLoading(false)
+        return
+      }
+      
+      // Fetch both recurring transactions and income data in parallel
+      const [recurringResponse, incomeResponse] = await Promise.all([
+        recurringApi.getAll(userId),
+        incomeApi.getAll(userId)
+      ])
+      
+      console.log('📊 Recurring API Response:', recurringResponse)
+      console.log('💰 Income API Response:', incomeResponse)
+      
+      // Process recurring transactions
+      if (recurringResponse.data && Array.isArray(recurringResponse.data)) {
+        console.log('📋 Raw recurring transactions data:', recurringResponse.data)
+        const processedTransactions = recurringResponse.data.map(processRecurringTransaction)
+        setRecurringTransactions(processedTransactions)
+        
+        if (processedTransactions.length === 0) {
+          toast('No recurring transactions found. Create your first recurring transaction!', {
+            icon: '🔄',
+            style: {
+              background: '#8b5cf6',
+              color: 'white',
+            }
+          })
+        }
+      } else {
+        console.log('⚠️ No recurring data received from API')
+        setRecurringTransactions([])
+      }
+      
+      // Process income data
+      if (incomeResponse.data && Array.isArray(incomeResponse.data)) {
+        console.log('💰 Raw income data:', incomeResponse.data)
+        setIncomeData(incomeResponse.data)
+      } else {
+        console.log('⚠️ No income data received from API')
+        setIncomeData([])
+      }
     } catch (error: any) {
-      toast.error('Failed to fetch recurring transactions')
-      console.error('Error fetching recurring transactions:', error)
+      const errorMessage = error?.message || 'Failed to fetch data'
+      console.error('❌ Error fetching data:', error)
+      toast.error(errorMessage)
+      setRecurringTransactions([]) // Set empty array on error to prevent UI crashes
+      setIncomeData([])
     } finally {
       setLoading(false)
     }
   }
 
   const processRecurringTransaction = (transaction: RecurringTransaction): RecurringTransactionWithDetails => {
-    const frequencyLabels = {
+    const frequencyLabels: Record<string, string> = {
       daily: 'Daily',
       weekly: 'Weekly',
       biweekly: 'Bi-weekly',
       monthly: 'Monthly',
       bimonthly: 'Bi-monthly',
       quarterly: 'Quarterly',
-      yearly: 'Yearly'
+      yearly: 'Yearly',
+      'once': 'Once',
+      'custom': 'Custom'
     }
 
     const now = new Date()
@@ -85,68 +122,60 @@ export default function RecurringTransactionsPage() {
     const daysUntilNext = differenceInDays(nextDate, now)
     const isOverdue = isBefore(nextDate, now)
 
-    const progressPercentage = transaction.count_occurrences > 0 
-      ? (transaction.current_occurrence / transaction.count_occurrences) * 100 
+    const progressPercentage = transaction.max_occurrences && transaction.max_occurrences > 0 
+      ? Math.min(((transaction.run_count || 0) / transaction.max_occurrences) * 100, 100) 
       : 0
 
     return {
       ...transaction,
-      formattedAmount: `$${transaction.amount.toLocaleString()}`,
+      formattedAmount: `$${typeof transaction.amount === 'number' ? transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : Number(transaction.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       formattedNextDate: format(nextDate, 'MMM d, yyyy'),
-      formattedStartDate: format(new Date(transaction.start_date), 'MMM d, yyyy'),
+      formattedStartDate: format(new Date(transaction.start_date || transaction.created_at), 'MMM d, yyyy'),
       formattedEndDate: transaction.end_date ? format(new Date(transaction.end_date), 'MMM d, yyyy') : undefined,
       frequencyLabel: frequencyLabels[transaction.frequency],
       typeIcon: transaction.type === 'income' ? '📈' : '📉',
       typeColor: transaction.type === 'income' ? 'text-green-600' : 'text-red-600',
       progressPercentage,
       daysUntilNext,
-      isOverdue
+      isOverdue,
+      current_occurrence: transaction.run_count || 0,
+      run_count: transaction.run_count || 0,
+      count_occurrences: transaction.max_occurrences
     }
   }
 
   const toggleTransactionStatus = async (id: string, isActive: boolean) => {
     try {
-      const { error } = await supabase
-        .from('recurring_transactions')
-        .update({ is_active: !isActive })
-        .eq('id', id)
-
-      if (error) throw error
-
-      toast.success(`Recurring transaction ${!isActive ? 'activated' : 'paused'} successfully`)
-      fetchRecurringTransactions()
+      const response = await recurringApi.update(id, { is_active: !isActive })
+      if (response.data) {
+        toast.success(`Recurring transaction ${!isActive ? 'activated' : 'paused'} successfully`)
+        fetchRecurringTransactions()
+      }
     } catch (error: any) {
-      toast.error('Failed to update transaction status')
+      const errorMessage = error?.message || 'Failed to update transaction status'
+      toast.error(errorMessage)
       console.error('Error updating status:', error)
     }
   }
 
   const deleteRecurringTransaction = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('recurring_transactions')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
-
-      toast.success('Recurring transaction deleted successfully')
-      fetchRecurringTransactions()
+      const response = await recurringApi.delete(id)
+      if (response.status === 'success' || response.data) {
+        toast.success('Recurring transaction deleted successfully')
+        fetchRecurringTransactions()
+      }
     } catch (error: any) {
-      toast.error('Failed to delete recurring transaction')
+      const errorMessage = error?.message || 'Failed to delete recurring transaction'
+      toast.error(errorMessage)
       console.error('Error deleting recurring transaction:', error)
     }
   }
 
   const generateNextTransaction = async (id: string) => {
     try {
-      const { error } = await supabase.rpc('generate_next_recurring_transaction', { 
-        recurring_transaction_id: id 
-      })
-
-      if (error) throw error
-
-      toast.success('Next transaction generated successfully')
+      // This would be a custom API endpoint - for now just refresh
+      toast('Transaction generation feature coming soon')
       fetchRecurringTransactions()
     } catch (error: any) {
       toast.error('Failed to generate next transaction')
@@ -160,11 +189,13 @@ export default function RecurringTransactionsPage() {
       let statusMatch = true
 
       if (filterStatus === 'active') {
-        statusMatch = transaction.is_active && !transaction.isOverdue && transaction.current_occurrence < transaction.count_occurrences
+        statusMatch = transaction.is_active && !transaction.isOverdue
       } else if (filterStatus === 'paused') {
         statusMatch = !transaction.is_active
       } else if (filterStatus === 'completed') {
-        statusMatch = transaction.current_occurrence >= transaction.count_occurrences || (transaction.end_date && isBefore(new Date(), new Date(transaction.end_date)))
+        const hasReachedMaxOccurrences = transaction.max_occurrences && (transaction.run_count || 0) >= transaction.max_occurrences
+        const hasEndDatePassed = transaction.end_date && isBefore(new Date(), new Date(transaction.end_date))
+        statusMatch = hasReachedMaxOccurrences || hasEndDatePassed
       }
 
       return typeMatch && statusMatch
@@ -173,42 +204,119 @@ export default function RecurringTransactionsPage() {
 
   const getTotalByType = (type: 'income' | 'expense') => {
     return getFilteredTransactions()
-      .filter(t => t.type === type && t.is_active)
-      .reduce((sum, t) => sum + t.amount, 0)
+      .filter(t => t.type === type && t.is_active && !t.isOverdue)
+      .reduce((sum, t) => {
+        const amount = typeof t.amount === 'number' ? t.amount : Number(t.amount)
+        return sum + (isNaN(amount) ? 0 : amount)
+      }, 0)
   }
 
   const totalIncome = getTotalByType('income')
   const totalExpenses = getTotalByType('expense')
-  const netMonthly = totalIncome - totalExpenses
 
   const filteredTransactions = getFilteredTransactions()
   const activeCount = filteredTransactions.filter(t => t.is_active).length
   const overdueCount = filteredTransactions.filter(t => t.isOverdue && t.is_active).length
 
+  // Calculate monthly income breakdown (same logic as income page)
+  const monthlyIncomeData = filteredTransactions
+    .filter(t => t.type === 'income' && t.is_active && !t.isOverdue)
+    .reduce((acc, item) => {
+      const month = new Date(item.start_date || item.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+      acc[month] = (acc[month] || 0) + (typeof item.amount === 'number' ? item.amount : Number(item.amount))
+      return acc
+    }, {} as Record<string, number>)
+
+  // Calculate actual monthly income from income API data (same logic as income page)
+  const actualMonthlyIncome = incomeData
+    .reduce((acc, item) => {
+      const month = new Date(item.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+      acc[month] = (acc[month] || 0) + (typeof item.amount === 'number' ? item.amount : Number(item.amount))
+      return acc
+    }, {} as Record<string, number>)
+
+  // Get current month income from actual income data
+  const currentDate = new Date()
+  const currentMonth = currentDate.getMonth()
+  const currentYear = currentDate.getFullYear()
+  const currentMonthIncome = incomeData
+    .filter(item => {
+      const itemDate = new Date(item.date)
+      return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+    })
+    .reduce((sum, item) => sum + (typeof item.amount === 'number' ? item.amount : Number(item.amount)), 0)
+
+  // Calculate expected monthly income from all active recurring income transactions
+  const expectedMonthlyIncome = filteredTransactions
+    .filter(t => t.type === 'income' && t.is_active && !t.isOverdue)
+    .reduce((sum, item) => {
+      const amount = typeof item.amount === 'number' ? item.amount : Number(item.amount)
+      return sum + (isNaN(amount) ? 0 : amount)
+    }, 0)
+
+  // Calculate expected monthly expenses from all active recurring expense transactions
+  const expectedMonthlyExpenses = filteredTransactions
+    .filter(t => t.type === 'expense' && t.is_active && !t.isOverdue)
+    .reduce((sum, item) => {
+      const amount = typeof item.amount === 'number' ? item.amount : Number(item.amount)
+      return sum + (isNaN(amount) ? 0 : amount)
+    }, 0)
+
+  const netMonthly = currentMonthIncome - expectedMonthlyExpenses
+
+  // Debug logging to check calculations
+  console.log('📊 Recurring Transactions Stats:')
+  console.log('- Actual Current Month Income:', currentMonthIncome)
+  console.log('- Expected Monthly Expenses:', expectedMonthlyExpenses)
+  console.log('- Net Monthly:', netMonthly)
+  console.log('- Income Data Count:', incomeData.length)
+  console.log('- Filtered Transactions Count:', filteredTransactions.length)
+  console.log('- Active Income Count:', filteredTransactions.filter(t => t.type === 'income' && t.is_active).length)
+  console.log('- Active Expense Count:', filteredTransactions.filter(t => t.type === 'expense' && t.is_active).length)
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
+      <AppLayout>
+        <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground font-medium">Loading recurring transactions...</p>
+          </div>
+        </div>
+      </AppLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card shadow-sm border-b">
+    <AppLayout>
+      <div className="bg-gradient-to-br from-background to-accent/20">
+      {/* Modern Header */}
+      <header className="bg-card/80 backdrop-blur-lg shadow-sm border-b border-border/50 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Recurring Transactions</h1>
-              <p className="text-sm text-muted-foreground">Manage your automatic recurring income and expenses</p>
+            <div className="flex items-center space-x-4">
+              <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center">
+                <Wallet className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                  Recurring Transactions
+                </h1>
+                <p className="text-sm text-muted-foreground">Manage your automatic recurring income and expenses</p>
+              </div>
             </div>
-            <Link href="/recurring/create">
-              <Button className="flex items-center space-x-2">
-                <Plus className="h-4 w-4" />
-                <span>Create Recurring</span>
+            <div className="flex space-x-3">
+              <Button variant="outline" className="border-border hover:bg-accent">
+                <Download className="h-4 w-4 mr-2" />
+                Export
               </Button>
-            </Link>
+              <Link href="/recurring/create">
+                <Button className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-lg transform transition-all duration-200 hover:scale-105">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Recurring
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </header>
@@ -224,11 +332,15 @@ export default function RecurringTransactionsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                ${totalIncome.toLocaleString()}
+                ${currentMonthIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
               <p className="text-xs text-muted-foreground">
-                From {filteredTransactions.filter(t => t.type === 'income' && t.is_active).length} active recurring incomes
+                From {incomeData.length} income records this month
               </p>
+              <div className="mt-3 flex items-center text-sm">
+                <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+                <span className="text-green-500">Actual income this month</span>
+              </div>
             </CardContent>
           </Card>
 
@@ -239,11 +351,15 @@ export default function RecurringTransactionsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">
-                ${totalExpenses.toLocaleString()}
+                ${expectedMonthlyExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
               <p className="text-xs text-muted-foreground">
                 From {filteredTransactions.filter(t => t.type === 'expense' && t.is_active).length} active recurring expenses
               </p>
+              <div className="mt-3 flex items-center text-sm">
+                <TrendingDown className="h-4 w-4 text-red-500 mr-1" />
+                <span className="text-red-500">Expected monthly</span>
+              </div>
             </CardContent>
           </Card>
 
@@ -254,11 +370,24 @@ export default function RecurringTransactionsPage() {
             </CardHeader>
             <CardContent>
               <div className={`text-2xl font-bold ${netMonthly >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-                ${Math.abs(netMonthly).toLocaleString()}
+                ${Math.abs(netMonthly).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
               <p className="text-xs text-muted-foreground">
                 {netMonthly >= 0 ? 'Positive cash flow' : 'Negative cash flow'}
               </p>
+              <div className="mt-3 flex items-center text-sm">
+                {netMonthly >= 0 ? (
+                  <>
+                    <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+                    <span className="text-green-500">Income vs recurring expenses</span>
+                  </>
+                ) : (
+                  <>
+                    <TrendingDown className="h-4 w-4 text-red-500 mr-1" />
+                    <span className="text-red-500">Expenses exceed income</span>
+                  </>
+                )}
+              </div>
             </CardContent>
           </Card>
 
@@ -472,12 +601,12 @@ export default function RecurringTransactionsPage() {
                     {/* Progress and Details */}
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                       {/* Progress */}
-                      {transaction.count_occurrences > 0 && (
+                      {transaction.max_occurrences && transaction.max_occurrences > 0 && (
                         <div>
                           <div className="flex justify-between text-sm mb-1">
                             <span className="text-gray-600">Progress</span>
                             <span className="font-medium">
-                              {transaction.current_occurrence}/{transaction.count_occurrences}
+                              {transaction.run_count || 0}/{transaction.max_occurrences}
                             </span>
                           </div>
                           <div className="w-full bg-muted rounded-full h-2">
@@ -529,5 +658,6 @@ export default function RecurringTransactionsPage() {
         </Card>
       </main>
     </div>
+    </AppLayout>
   )
 }
