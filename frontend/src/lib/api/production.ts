@@ -759,6 +759,53 @@ export interface TrainingResponse {
   training_samples: number
 }
 
+// ==================== PREDICTION API TYPES ====================
+
+export interface ExpenseItem {
+  amount: number
+  category: string
+  date: string
+  description?: string
+}
+
+export interface ExpensePredictionRequest {
+  expenses: ExpenseItem[]
+  target_month: string
+}
+
+export interface ExpensePredictionResponse {
+  prediction: {
+    category: string
+    predicted_amount: number
+    confidence_score?: number
+  }[]
+  total_predicted: number
+  month: string
+  status: string
+  message?: string
+}
+
+export interface LinearPredictionRequest {
+  features: number[]
+  category: string
+  target_date: string
+  month: string
+  model_version?: string
+  notes?: string
+}
+
+export interface LinearPredictionResponse {
+  prediction: {
+    value: number
+    category: string
+    confidence_score?: number
+    model_version?: string
+    features_used?: number[]
+  }
+  status: string
+  message?: string
+}
+
 export interface HealthResponse {
   status: string
   service: string
@@ -786,17 +833,16 @@ export const mlApi = {
       method: 'POST',
     }),
 
+  // Expense prediction endpoint
+  predictExpenses: (data: ExpensePredictionRequest) =>
+    apiRequest<ExpensePredictionResponse>('/predict', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
   // Linear regression prediction
-  predictLinear: (data: {
-    features?: number[]
-    prediction_type?: string
-    category?: string
-    target_date?: string
-    month?: string
-    model_version?: string
-    notes?: string
-  }) =>
-    apiRequest<{ prediction: any; status: string }>('/predict/linear', {
+  predictLinear: (data: LinearPredictionRequest) =>
+    apiRequest<LinearPredictionResponse>('/predict/linear', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
@@ -808,7 +854,7 @@ export const mlApi = {
       body: JSON.stringify(data),
     }),
 
-  // Enhanced expense prediction
+  // Enhanced expense prediction (legacy)
   predict: (data: PredictionRequest) =>
     apiRequest<PredictionResponse>('/predict', {
       method: 'POST',

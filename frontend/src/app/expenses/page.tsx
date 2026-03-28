@@ -6,7 +6,7 @@ import { expenseApi } from '@/lib/api/production'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { Plus, TrendingDown, Calendar, CreditCard, Edit, Trash2, Search, Filter, Download, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, Wallet, Eye } from 'lucide-react'
+import { Plus, TrendingDown, Calendar, CreditCard, Edit, Trash2, Search, Filter, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, Wallet, Eye } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
@@ -127,17 +127,8 @@ export default function ExpensesPage() {
     }
   }
 
-  const handleView = async (id: string) => {
-    try {
-      const response = await expenseApi.getById(id)
-      if (response.data) {
-        // You can show a modal with full expense details here
-        toast.success('Expense details loaded')
-        console.log('Full expense data:', response.data)
-      }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to fetch expense details')
-    }
+  const handleView = (id: string) => {
+    router.push(`/expenses/${id}`)
   }
 
   const totalExpenses = filteredExpenses.reduce((sum, item) => {
@@ -181,10 +172,6 @@ export default function ExpensesPage() {
               </div>
             </div>
             <div className="flex space-x-3">
-              <Button variant="outline" className="border-border hover:bg-accent">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
               <Link href="/expenses/add">
                 <Button className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 shadow-lg transform transition-all duration-200 hover:scale-105">
                   <Plus className="h-4 w-4 mr-2" />
@@ -410,7 +397,7 @@ export default function ExpensesPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleView(expense.id)}
-                              className="border-border hover:bg-accent text-foreground h-8 w-8 sm:h-auto sm:w-auto sm:px-3"
+                              className="border-blue-500 hover:bg-blue-50 text-blue-600 h-8 w-8 sm:h-auto sm:w-auto sm:px-3"
                             >
                               <Eye className="h-4 w-4" />
                               <span className="hidden sm:inline ml-1">View</span>
