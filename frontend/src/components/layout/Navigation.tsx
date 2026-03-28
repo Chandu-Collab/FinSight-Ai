@@ -28,6 +28,7 @@ const navigation = [
   { name: 'Expenses', href: '/expenses', icon: CreditCard },
   { name: 'Budgets', href: '/budgets', icon: Target },
   { name: 'Recurring', href: '/recurring', icon: Repeat },
+  { name: 'Notifications', href: '/notifications', icon: Bell },
   { name: 'Savings Goals', href: '/savings-goals', icon: Target },
   { name: 'Reports', href: '/reports', icon: FileText },
   { name: 'Settings', href: '/settings', icon: Settings },
@@ -110,7 +111,12 @@ export function Navigation() {
             </Link>
             
             <div className="flex space-x-2">
-              <Button variant="outline" size="sm" className="flex-1">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex-1"
+                onClick={() => router.push('/notifications')}
+              >
                 <Bell className="h-4 w-4 mr-2" />
                 Notifications
               </Button>
