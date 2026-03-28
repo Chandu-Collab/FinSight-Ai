@@ -6,28 +6,28 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Moon, Sun, Monitor, Check, Bell, Globe, Shield, HelpCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useTheme } from '@/contexts/ThemeContext'
 
 // Import AppLayout dynamically to avoid SSR issues
 const AppLayout = dynamic(() => import('@/components/layout/AppLayout').then(mod => ({ default: mod.AppLayout })), { ssr: false })
 
 export default function SettingsPage() {
+  const { theme, setTheme, isDarkMode } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [notifications, setNotifications] = useState(true)
   const [autoSave, setAutoSave] = useState(true)
   const [language, setLanguage] = useState('en')
-  const [theme, setTheme] = useState('light')
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
   const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
+    setTheme(newTheme)
     if (newTheme === 'system') {
       const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      setTheme(systemPrefersDark ? 'dark' : 'light')
       toast.success('Theme set to system preference')
     } else {
-      setTheme(newTheme)
       toast.success(`${newTheme.charAt(0).toUpperCase() + newTheme.slice(1)} mode activated`)
     }
   }

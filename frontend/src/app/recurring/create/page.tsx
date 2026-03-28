@@ -1,16 +1,31 @@
 'use client'
 
-import React from 'react'
+import { useRouter } from 'next/navigation'
+import RecurringTransactionForm from '@/components/forms/RecurringTransactionForm'
+import { AppLayout } from '@/components/layout/AppLayout'
+import { type RecurringTransaction } from '@/lib/api/production'
+import toast from 'react-hot-toast'
 
 export default function CreateRecurringPage() {
+  const router = useRouter()
+
+  const handleSuccess = (transaction: RecurringTransaction) => {
+    toast.success('Recurring transaction created successfully!')
+    router.push('/recurring')
+  }
+
+  const handleCancel = () => {
+    router.push('/recurring')
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AppLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl font-bold text-gray-900">Create Recurring Transaction</h1>
-        <div className="mt-8">
-          <p>Recurring transaction form placeholder - build working</p>
-        </div>
+        <RecurringTransactionForm
+          onSuccess={handleSuccess}
+          onCancel={handleCancel}
+        />
       </div>
-    </div>
+    </AppLayout>
   )
 }

@@ -1,28 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase/client'
+import { notificationApi, type Notification as NotificationType } from '@/lib/api/production'
+import { AppLayout } from '@/components/layout/AppLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Bell, BellOff, Check, X, AlertTriangle, TrendingUp, TrendingDown, Calendar, Settings, Trash2, Eye, Archive } from 'lucide-react'
+import { Bell, BellOff, Check, X, AlertTriangle, Eye, EyeOff, Trash2, Info, CheckCircle, XCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { format, differenceInDays, isAfter, isBefore } from 'date-fns'
-
-interface Notification {
-  id: string
-  type: 'budget_alert' | 'savings_goal' | 'recurring_transaction' | 'system'
-  title: string
-  message: string
-  priority: 'low' | 'medium' | 'high' | 'urgent'
-  is_read: boolean
-  is_acknowledged: boolean
-  action_required: boolean
-  action_url?: string
-  action_label?: string
-  metadata?: any
-  created_at: string
-  acknowledged_at?: string
-}
+import { format } from 'date-fns'
+import { cn } from '@/lib/utils'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface NotificationStats {
   total: number
@@ -34,11 +21,12 @@ interface NotificationStats {
   low: number
 }
 
-export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([])
+function NotificationsPageContent() {
+  const { theme, isDarkMode } = useTheme()
+  const [notifications, setNotifications] = useState<NotificationType[]>([])
   const [loading, setLoading] = useState(true)
   const [filterType, setFilterType] = useState<'all' | 'unread' | 'acknowledged' | 'unacknowledged'>('all')
-  const [filterCategory, setFilterCategory] = useState<'all' | 'budget_alert' | 'savings_goal' | 'recurring_transaction' | 'system'>('all')
+  const [filterCategory, setFilterCategory] = useState<'all' | 'info' | 'warning' | 'success' | 'error'>('all')
   const [filterPriority, setFilterPriority] = useState<'all' | 'urgent' | 'high' | 'medium' | 'low'>('all')
   const [stats, setStats] = useState<NotificationStats>({
     total: 0,
@@ -52,59 +40,77 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     fetchNotifications()
-    
-    // Set up real-time subscription for new notifications
-    const subscription = supabase
-      .channel('notifications')
-      .on('postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'notifications' },
-        (payload) => {
-          fetchNotifications()
-        }
-      )
-      .on('postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'notifications' },
-        (payload) => {
-          fetchNotifications()
-        }
-      )
-
-    return () => {
-      subscription.unsubscribe()
-    }
   }, [])
 
   const fetchNotifications = async () => {
     try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100)
-
-      if (error) throw error
-
-      setNotifications(data || [])
-      calculateStats(data || [])
+      // Get current user ID from localStorage
+      const userData = typeof window !== 'undefined' ? localStorage.getItem('user_data') : null
+      const userId = userData ? JSON.parse(userData).id : null
+      
+      console.log('🔍 Fetching notifications for userId:', userId)
+      
+      if (!userId) {
+        console.warn('⚠️ No user ID found - user might not be logged in')
+        toast.error('Please log in to view notifications')
+        setNotifications([])
+        setLoading(false)
+        return
+      }
+      
+      // Call notifications API endpoint
+      const response = await notificationApi.getAll(userId)
+      console.log('📊 Notifications API Response:', response)
+      
+      if (response.data && Array.isArray(response.data)) {
+        console.log('📋 Raw notifications data:', response.data)
+        setNotifications(response.data)
+        calculateStats(response.data)
+        
+        if (response.data.length === 0) {
+          toast('No notifications found. You\'re all caught up!', {
+            icon: '🔔',
+            style: {
+              background: '#10b981',
+              color: 'white',
+            }
+          })
+        }
+      } else {
+        console.log('⚠️ No notifications data received from API')
+        setNotifications([])
+        calculateStats([])
+      }
     } catch (error: any) {
-      toast.error('Failed to fetch notifications')
-      console.error('Error fetching notifications:', error)
+      const errorMessage = error?.message || 'Failed to fetch notifications'
+      toast.error(errorMessage)
+      console.error('❌ Error fetching notifications:', error)
+      setNotifications([])
+      calculateStats([])
     } finally {
       setLoading(false)
     }
   }
 
-  const calculateStats = (notifications: Notification[]) => {
+  const calculateStats = (notifications: NotificationType[]) => {
     const newStats = notifications.reduce((acc, notification) => {
       acc.total++
       if (!notification.is_read) acc.unread++
       if (!notification.is_acknowledged) acc.unacknowledged++
       
       switch (notification.priority) {
-        case 'urgent': acc.urgent++; break
-        case 'high': acc.high++; break
-        case 'medium': acc.medium++; break
-        case 'low': acc.low++; break
+        case 'urgent':
+          acc.urgent++
+          break
+        case 'high':
+          acc.high++
+          break
+        case 'medium':
+          acc.medium++
+          break
+        case 'low':
+          acc.low++
+          break
       }
       
       return acc
@@ -117,216 +123,239 @@ export default function NotificationsPage() {
       medium: 0,
       low: 0
     })
-
+    
     setStats(newStats)
   }
 
   const markAsRead = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('id', id)
-
-      if (error) throw error
-
-      setNotifications(prev => 
-        prev.map(n => n.id === id ? { ...n, is_read: true } : n)
-      )
+      console.log('📖 Marking notification as read:', id)
+      const response = await notificationApi.update(id, { is_read: true })
+      console.log('📊 Mark as read response:', response)
+      
+      if (response.data) {
+        setNotifications(prev => 
+          prev.map(n => n.id === id ? { ...n, is_read: true } : n)
+        )
+        calculateStats(notifications.map(n => n.id === id ? { ...n, is_read: true } : n))
+        toast.success('Marked as read')
+      }
     } catch (error: any) {
-      toast.error('Failed to mark as read')
-      console.error('Error marking as read:', error)
+      const errorMessage = error?.message || 'Failed to mark as read'
+      toast.error(errorMessage)
+      console.error('❌ Error marking as read:', error)
     }
   }
 
   const markAsUnread = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: false })
-        .eq('id', id)
-
-      if (error) throw error
-
-      setNotifications(prev => 
-        prev.map(n => n.id === id ? { ...n, is_read: false } : n)
-      )
+      console.log('📕 Marking notification as unread:', id)
+      const response = await notificationApi.update(id, { is_read: false })
+      console.log('📊 Mark as unread response:', response)
+      
+      if (response.data) {
+        setNotifications(prev => 
+          prev.map(n => n.id === id ? { ...n, is_read: false } : n)
+        )
+        calculateStats(notifications.map(n => n.id === id ? { ...n, is_read: false } : n))
+        toast.success('Marked as unread')
+      }
     } catch (error: any) {
-      toast.error('Failed to mark as unread')
-      console.error('Error marking as unread:', error)
+      const errorMessage = error?.message || 'Failed to mark as unread'
+      toast.error(errorMessage)
+      console.error('❌ Error marking as unread:', error)
     }
   }
 
   const acknowledgeNotification = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ 
-          is_acknowledged: true,
-          acknowledged_at: new Date().toISOString()
-        })
-        .eq('id', id)
-
-      if (error) throw error
-
-      setNotifications(prev => 
-        prev.map(n => n.id === id ? { ...n, is_acknowledged: true, acknowledged_at: new Date().toISOString() } : n)
-      )
-
-      toast.success('Notification acknowledged')
+      console.log('✅ Acknowledging notification:', id)
+      const response = await notificationApi.update(id, { 
+        is_acknowledged: true
+      })
+      console.log('📊 Acknowledge response:', response)
+      
+      if (response.data) {
+        setNotifications(prev => 
+          prev.map(n => n.id === id ? { ...n, is_acknowledged: true } : n)
+        )
+        calculateStats(notifications.map(n => n.id === id ? { ...n, is_acknowledged: true } : n))
+        toast.success('Notification acknowledged')
+      }
     } catch (error: any) {
-      toast.error('Failed to acknowledge notification')
-      console.error('Error acknowledging notification:', error)
+      const errorMessage = error?.message || 'Failed to acknowledge notification'
+      toast.error(errorMessage)
+      console.error('❌ Error acknowledging notification:', error)
     }
   }
 
   const deleteNotification = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this notification?')) {
+      return
+    }
+
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
-
-      setNotifications(prev => prev.filter(n => n.id !== id))
-      toast.success('Notification deleted')
+      console.log('🗑️ Deleting notification:', id)
+      const response = await notificationApi.delete(id)
+      console.log('📊 Delete response:', response)
+      
+      if (response.status === 'success' || response.data) {
+        setNotifications(prev => prev.filter(n => n.id !== id))
+        calculateStats(notifications.filter(n => n.id !== id))
+        toast.success('Notification deleted')
+      } else {
+        toast.error('Failed to delete notification')
+      }
     } catch (error: any) {
-      toast.error('Failed to delete notification')
-      console.error('Error deleting notification:', error)
+      const errorMessage = error?.message || 'Failed to delete notification'
+      toast.error(errorMessage)
+      console.error('❌ Error deleting notification:', error)
     }
   }
 
-  const markAllAsRead = async () => {
-    try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('is_read', false)
-
-      if (error) throw error
-
-      setNotifications(prev => 
-        prev.map(n => ({ ...n, is_read: true }))
-      )
-
-      toast.success('All notifications marked as read')
-    } catch (error: any) {
-      toast.error('Failed to mark all as read')
-      console.error('Error marking all as read:', error)
-    }
-  }
-
-  const acknowledgeAll = async () => {
-    try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ 
-          is_acknowledged: true,
-          acknowledged_at: new Date().toISOString()
-        })
-        .eq('is_acknowledged', false)
-
-      if (error) throw error
-
-      setNotifications(prev => 
-        prev.map(n => ({ ...n, is_acknowledged: true, acknowledged_at: new Date().toISOString() }))
-      )
-
-      toast.success('All notifications acknowledged')
-    } catch (error: any) {
-      toast.error('Failed to acknowledge all notifications')
-      console.error('Error acknowledging all notifications:', error)
+  const markNotificationAsReadWhenViewed = async (notificationId: string) => {
+    const notification = notifications.find(n => n.id === notificationId)
+    if (notification && !notification.is_read) {
+      await markAsRead(notificationId)
     }
   }
 
   const getFilteredNotifications = () => {
     return notifications.filter(notification => {
-      const typeMatch = filterType === 'all' || 
-        (filterType === 'unread' && !notification.is_read) ||
-        (filterType === 'acknowledged' && notification.is_acknowledged) ||
-        (filterType === 'unacknowledged' && !notification.is_acknowledged)
-
-      const categoryMatch = filterCategory === 'all' || notification.type === filterCategory
-      const priorityMatch = filterPriority === 'all' || notification.priority === filterPriority
-
-      return typeMatch && categoryMatch && priorityMatch
+      // Filter by type
+      if (filterType === 'unread' && notification.is_read) return false
+      if (filterType === 'acknowledged' && !notification.is_acknowledged) return false
+      if (filterType === 'unacknowledged' && notification.is_acknowledged) return false
+      
+      // Filter by category
+      if (filterCategory !== 'all' && notification.type !== filterCategory) return false
+      
+      // Filter by priority
+      if (filterPriority !== 'all' && notification.priority !== filterPriority) return false
+      
+      return true
     })
   }
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'budget_alert': return <AlertTriangle className="h-5 w-5 text-orange-500" />
-      case 'savings_goal': return <TrendingUp className="h-5 w-5 text-green-500" />
-      case 'recurring_transaction': return <Calendar className="h-5 w-5 text-blue-500" />
-      case 'system': return <Bell className="h-5 w-5 text-gray-500" />
-      default: return <Bell className="h-5 w-5 text-gray-500" />
+      case 'info':
+        return <Info className="h-4 w-4 text-blue-500" />
+      case 'warning':
+        return <AlertTriangle className="h-4 w-4 text-yellow-500" />
+      case 'success':
+        return <CheckCircle className="h-4 w-4 text-green-500" />
+      case 'error':
+        return <XCircle className="h-4 w-4 text-red-500" />
+      default:
+        return <Bell className="h-4 w-4 text-gray-500" />
     }
   }
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'border-red-500 bg-red-50'
-      case 'high': return 'border-orange-500 bg-orange-50'
-      case 'medium': return 'border-yellow-500 bg-yellow-50'
-      case 'low': return 'border-gray-300 bg-gray-50'
-      default: return 'border-gray-300 bg-white'
+      case 'urgent':
+        return isDarkMode 
+          ? 'border-red-900 bg-red-900/20' 
+          : 'border-red-200 bg-red-50'
+      case 'high':
+        return isDarkMode 
+          ? 'border-orange-900 bg-orange-900/20' 
+          : 'border-orange-200 bg-orange-50'
+      case 'medium':
+        return isDarkMode 
+          ? 'border-yellow-900 bg-yellow-900/20' 
+          : 'border-yellow-200 bg-yellow-50'
+      case 'low':
+        return isDarkMode 
+          ? 'border-gray-700 bg-gray-700/50' 
+          : 'border-gray-200 bg-gray-50'
+      default:
+        return isDarkMode 
+          ? 'border-gray-700 bg-gray-800' 
+          : 'border-gray-200 bg-white'
     }
   }
-
-  const getPriorityBadgeColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-800'
-      case 'high': return 'bg-orange-100 text-orange-800'
-      case 'medium': return 'bg-yellow-100 text-yellow-800'
-      case 'low': return 'bg-gray-100 text-gray-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  const filteredNotifications = getFilteredNotifications()
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div className={cn(
+        "min-h-screen flex items-center justify-center",
+        isDarkMode 
+          ? "bg-gradient-to-br from-gray-900 to-gray-800" 
+          : "bg-gradient-to-br from-background to-accent/20"
+      )}>
+        <div className="text-center">
+          <div className={cn(
+            "animate-spin rounded-full h-16 w-16 border-b-2 mx-auto mb-4",
+            isDarkMode ? "border-primary" : "border-primary"
+          )}></div>
+          <p className={cn(
+            "font-medium",
+            isDarkMode ? "text-gray-300" : "text-muted-foreground"
+          )}>
+            Loading notifications...
+          </p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={cn(
+      "min-h-screen",
+      isDarkMode 
+        ? "bg-gradient-to-br from-gray-900 to-gray-800" 
+        : "bg-gradient-to-br from-background to-accent/20"
+    )}>
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className={cn(
+        "sticky top-0 z-50 shadow-sm border-b",
+        isDarkMode 
+          ? "bg-gray-800/90 backdrop-blur-lg border-gray-700" 
+          : "bg-card/80 backdrop-blur-lg shadow-sm border-b border-border/50"
+      )}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-3">
-              <Bell className="h-6 w-6 text-gray-600" />
+            <div className="flex items-center space-x-4">
+              <div className={cn(
+                "w-10 h-10 rounded-xl flex items-center justify-center",
+                isDarkMode 
+                  ? "bg-gradient-to-r from-blue-600 to-indigo-600" 
+                  : "bg-gradient-to-r from-blue-600 to-indigo-600"
+              )}>
+                <Bell className="h-6 w-6 text-white" />
+              </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
-                <p className="text-sm text-gray-500">Manage your alerts and notifications</p>
+                <h1 className={cn(
+                  "text-2xl font-bold bg-clip-text text-transparent",
+                  isDarkMode 
+                    ? "bg-gradient-to-r from-blue-400 to-indigo-400" 
+                    : "bg-gradient-to-r from-blue-600 to-indigo-600"
+                )}>
+                  Notifications
+                </h1>
+                <p className={cn(
+                  "text-sm",
+                  isDarkMode ? "text-gray-300" : "text-muted-foreground"
+                )}>
+                  {stats.unread} unread • {stats.total} total
+                </p>
               </div>
             </div>
-            <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                onClick={markAllAsRead}
-                disabled={stats.unread === 0}
-                className="flex items-center space-x-2"
-              >
-                <Eye className="h-4 w-4" />
-                <span>Mark All Read</span>
-              </Button>
-              <Button
-                variant="outline"
-                onClick={acknowledgeAll}
-                disabled={stats.unacknowledged === 0}
-                className="flex items-center space-x-2"
-              >
-                <Check className="h-4 w-4" />
-                <span>Acknowledge All</span>
-              </Button>
-            </div>
+            <Button 
+              variant="outline" 
+              onClick={fetchNotifications}
+              className={cn(
+                "border hover:bg-accent",
+                isDarkMode 
+                  ? "border-gray-600 hover:bg-gray-700" 
+                  : "border-border hover:bg-accent"
+              )}
+            >
+              <BellOff className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
           </div>
         </div>
       </header>
@@ -335,311 +364,350 @@ export default function NotificationsPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
+          <Card className={cn(
+            isDarkMode ? "bg-gray-800 border-gray-700" : "bg-card"
+          )}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Notifications</CardTitle>
-              <Bell className="h-4 w-4 text-blue-600" />
+              <CardTitle className={cn(
+                "text-sm font-medium",
+                isDarkMode ? "text-gray-200" : "text-muted-foreground"
+              )}>
+                Total
+              </CardTitle>
+              <Bell className={cn(
+                "h-4 w-4",
+                isDarkMode ? "text-blue-400" : "text-blue-600"
+              )} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
-              <p className="text-xs text-muted-foreground">All notifications</p>
+              <div className={cn(
+                "text-2xl font-bold",
+                isDarkMode ? "text-blue-400" : "text-blue-600"
+              )}>
+                {stats.total}
+              </div>
+              <p className={cn(
+                "text-xs",
+                isDarkMode ? "text-gray-400" : "text-muted-foreground"
+              )}>
+                All notifications
+              </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className={cn(
+            isDarkMode ? "bg-gray-800 border-gray-700" : "bg-card"
+          )}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Unread</CardTitle>
-              <BellOff className="h-4 w-4 text-orange-600" />
+              <CardTitle className={cn(
+                "text-sm font-medium",
+                isDarkMode ? "text-gray-200" : "text-muted-foreground"
+              )}>
+                Unread
+              </CardTitle>
+              <Eye className={cn(
+                "h-4 w-4",
+                isDarkMode ? "text-orange-400" : "text-orange-600"
+              )} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600">{stats.unread}</div>
-              <p className="text-xs text-muted-foreground">Not yet read</p>
+              <div className={cn(
+                "text-2xl font-bold",
+                isDarkMode ? "text-orange-400" : "text-orange-600"
+              )}>
+                {stats.unread}
+              </div>
+              <p className={cn(
+                "text-xs",
+                isDarkMode ? "text-gray-400" : "text-muted-foreground"
+              )}>
+                Not yet read
+              </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className={cn(
+            isDarkMode ? "bg-gray-800 border-gray-700" : "bg-card"
+          )}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Unacknowledged</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-red-600" />
+              <CardTitle className={cn(
+                "text-sm font-medium",
+                isDarkMode ? "text-gray-200" : "text-muted-foreground"
+              )}>
+                Unacknowledged
+              </CardTitle>
+              <X className={cn(
+                "h-4 w-4",
+                isDarkMode ? "text-red-400" : "text-red-600"
+              )} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.unacknowledged}</div>
-              <p className="text-xs text-muted-foreground">Action required</p>
+              <div className={cn(
+                "text-2xl font-bold",
+                isDarkMode ? "text-red-400" : "text-red-600"
+              )}>
+                {stats.unacknowledged}
+              </div>
+              <p className={cn(
+                "text-xs",
+                isDarkMode ? "text-gray-400" : "text-muted-foreground"
+              )}>
+                Need attention
+              </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className={cn(
+            isDarkMode ? "bg-gray-800 border-gray-700" : "bg-card"
+          )}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Urgent</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-red-600" />
+              <CardTitle className={cn(
+                "text-sm font-medium",
+                isDarkMode ? "text-gray-200" : "text-muted-foreground"
+              )}>
+                Urgent
+              </CardTitle>
+              <AlertTriangle className={cn(
+                "h-4 w-4",
+                isDarkMode ? "text-red-400" : "text-red-600"
+              )} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.urgent}</div>
-              <p className="text-xs text-muted-foreground">High priority</p>
+              <div className={cn(
+                "text-2xl font-bold",
+                isDarkMode ? "text-red-400" : "text-red-600"
+              )}>
+                {stats.urgent}
+              </div>
+              <p className={cn(
+                "text-xs",
+                isDarkMode ? "text-gray-400" : "text-muted-foreground"
+              )}>
+                High priority
+              </p>
             </CardContent>
           </Card>
         </div>
 
         {/* Filters */}
         <div className="flex flex-wrap gap-4 mb-6">
-          <div className="flex space-x-2">
-            <Button
-              variant={filterType === 'all' ? 'default' : 'outline'}
-              onClick={() => setFilterType('all')}
-              size="sm"
-            >
-              All
-            </Button>
-            <Button
-              variant={filterType === 'unread' ? 'default' : 'outline'}
-              onClick={() => setFilterType('unread')}
-              size="sm"
-            >
-              Unread
-            </Button>
-            <Button
-              variant={filterType === 'unacknowledged' ? 'default' : 'outline'}
-              onClick={() => setFilterType('unacknowledged')}
-              size="sm"
-            >
-              Unacknowledged
-            </Button>
-            <Button
-              variant={filterType === 'acknowledged' ? 'default' : 'outline'}
-              onClick={() => setFilterType('acknowledged')}
-              size="sm"
-            >
-              Acknowledged
-            </Button>
-          </div>
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value as any)}
+            className={cn(
+              "px-3 py-2 border rounded-md",
+              isDarkMode 
+                ? "bg-gray-800 border-gray-600 text-gray-200" 
+                : "bg-background border-border"
+            )}
+          >
+            <option value="all">All Types</option>
+            <option value="unread">Unread</option>
+            <option value="acknowledged">Acknowledged</option>
+            <option value="unacknowledged">Unacknowledged</option>
+          </select>
 
-          <div className="flex space-x-2">
-            <Button
-              variant={filterCategory === 'all' ? 'default' : 'outline'}
-              onClick={() => setFilterCategory('all')}
-              size="sm"
-            >
-              All Types
-            </Button>
-            <Button
-              variant={filterCategory === 'budget_alert' ? 'default' : 'outline'}
-              onClick={() => setFilterCategory('budget_alert')}
-              size="sm"
-            >
-              Budget
-            </Button>
-            <Button
-              variant={filterCategory === 'savings_goal' ? 'default' : 'outline'}
-              onClick={() => setFilterCategory('savings_goal')}
-              size="sm"
-            >
-              Savings
-            </Button>
-            <Button
-              variant={filterCategory === 'recurring_transaction' ? 'default' : 'outline'}
-              onClick={() => setFilterCategory('recurring_transaction')}
-              size="sm"
-            >
-              Recurring
-            </Button>
-          </div>
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value as any)}
+            className={cn(
+              "px-3 py-2 border rounded-md",
+              isDarkMode 
+                ? "bg-gray-800 border-gray-600 text-gray-200" 
+                : "bg-background border-border"
+            )}
+          >
+            <option value="all">All Categories</option>
+            <option value="info">Info</option>
+            <option value="warning">Warning</option>
+            <option value="success">Success</option>
+            <option value="error">Error</option>
+          </select>
 
-          <div className="flex space-x-2">
-            <Button
-              variant={filterPriority === 'all' ? 'default' : 'outline'}
-              onClick={() => setFilterPriority('all')}
-              size="sm"
-            >
-              All Priority
-            </Button>
-            <Button
-              variant={filterPriority === 'urgent' ? 'default' : 'outline'}
-              onClick={() => setFilterPriority('urgent')}
-              size="sm"
-            >
-              Urgent
-            </Button>
-            <Button
-              variant={filterPriority === 'high' ? 'default' : 'outline'}
-              onClick={() => setFilterPriority('high')}
-              size="sm"
-            >
-              High
-            </Button>
-          </div>
+          <select
+            value={filterPriority}
+            onChange={(e) => setFilterPriority(e.target.value as any)}
+            className={cn(
+              "px-3 py-2 border rounded-md",
+              isDarkMode 
+                ? "bg-gray-800 border-gray-600 text-gray-200" 
+                : "bg-background border-border"
+            )}
+          >
+            <option value="all">All Priorities</option>
+            <option value="urgent">Urgent</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
         </div>
 
         {/* Notifications List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Notifications</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {filteredNotifications.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="flex justify-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-                    <Bell className="h-8 w-8 text-gray-400" />
-                  </div>
-                </div>
-                <h3 className="mt-4 text-lg font-medium text-gray-900">No notifications found</h3>
-                <p className="mt-2 text-sm text-gray-500">
-                  You're all caught up! Check back later for new notifications.
+        <div className="space-y-4">
+          {getFilteredNotifications().length === 0 ? (
+            <Card className={cn(
+              "text-center py-12",
+              isDarkMode ? "bg-gray-800 border-gray-700" : "bg-card"
+            )}>
+              <CardContent>
+                <Bell className={cn(
+                  "h-12 w-12 mx-auto mb-4",
+                  isDarkMode ? "text-gray-400" : "text-muted-foreground"
+                )} />
+                <h3 className={cn(
+                  "text-lg font-medium mb-2",
+                  isDarkMode ? "text-gray-100" : "text-foreground"
+                )}>
+                  No notifications found
+                </h3>
+                <p className={cn(
+                  isDarkMode ? "text-gray-400" : "text-muted-foreground"
+                )}>
+                  {filterType !== 'all' || filterCategory !== 'all' || filterPriority !== 'all'
+                    ? 'Try adjusting your filters'
+                    : 'You\'re all caught up!'}
                 </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredNotifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className={`border rounded-lg p-4 transition-colors ${getPriorityColor(notification.priority)} ${
-                      !notification.is_read ? 'border-l-4' : ''
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-3">
-                        <div className="mt-1">
-                          {getNotificationIcon(notification.type)}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <h3 className={`font-medium ${!notification.is_read ? 'text-gray-900' : 'text-gray-600'}`}>
-                              {notification.title}
-                            </h3>
-                            <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${getPriorityBadgeColor(notification.priority)}`}>
-                              {notification.priority}
-                            </span>
-                            {!notification.is_read && (
-                              <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                                New
-                              </span>
-                            )}
-                            {notification.action_required && !notification.is_acknowledged && (
-                              <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                                Action Required
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm text-gray-600 mb-2">
-                            {notification.message}
-                          </p>
-                          <div className="flex items-center space-x-4 text-xs text-gray-500">
-                            <span>{format(new Date(notification.created_at), 'MMM d, yyyy h:mm a')}</span>
-                            {notification.acknowledged_at && (
-                              <span>Acknowledged: {format(new Date(notification.acknowledged_at), 'MMM d, yyyy h:mm a')}</span>
-                            )}
-                          </div>
-                        </div>
+              </CardContent>
+            </Card>
+          ) : (
+            getFilteredNotifications().map((notification) => (
+              <Card 
+                key={notification.id} 
+                className={cn(
+                  "transition-all duration-200 hover:shadow-md cursor-pointer",
+                  getPriorityColor(notification.priority || 'low'),
+                  !notification.is_read && "border-l-4 border-l-blue-500"
+                )}
+                onClick={() => markNotificationAsReadWhenViewed(notification.id)}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start space-x-4 flex-1">
+                      <div className="mt-1">
+                        {getNotificationIcon(notification.type || 'info')}
                       </div>
-                      <div className="flex items-center space-x-2 ml-4">
-                        {!notification.is_read && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => markAsRead(notification.id)}
-                            className="flex items-center space-x-1"
-                          >
-                            <Eye className="h-4 w-4" />
-                            <span>Read</span>
-                          </Button>
-                        )}
-                        {notification.is_read && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => markAsUnread(notification.id)}
-                            className="flex items-center space-x-1"
-                          >
-                            <BellOff className="h-4 w-4" />
-                            <span>Unread</span>
-                          </Button>
-                        )}
-                        {notification.action_required && !notification.is_acknowledged && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => acknowledgeNotification(notification.id)}
-                            className="flex items-center space-x-1 text-green-600"
-                          >
-                            <Check className="h-4 w-4" />
-                            <span>Acknowledge</span>
-                          </Button>
-                        )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => deleteNotification(notification.id)}
-                          className="flex items-center space-x-1 text-red-600"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span>Delete</span>
-                        </Button>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h3 className={cn(
+                            "font-semibold",
+                            isDarkMode ? "text-white" : "text-foreground"
+                          )}>
+                            {notification.title}
+                          </h3>
+                          {!notification.is_read && (
+                            <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                              New
+                            </span>
+                          )}
+                          {notification.priority === 'urgent' && (
+                            <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">
+                              Urgent
+                            </span>
+                          )}
+                        </div>
+                        <p className={cn(
+                          "mb-2",
+                          isDarkMode ? "text-gray-300" : "text-muted-foreground"
+                        )}>
+                          {notification.message}
+                        </p>
+                        <div className="flex items-center space-x-4 text-sm">
+                          <span className={cn(
+                            isDarkMode ? "text-gray-400" : "text-muted-foreground"
+                          )}>
+                            {format(new Date(notification.created_at || ''), 'MMM d, yyyy HH:mm')}
+                          </span>
+                          {notification.expires_at && (
+                            <span className={cn(
+                              isDarkMode ? "text-gray-400" : "text-muted-foreground"
+                            )}>
+                              Expires: {format(new Date(notification.expires_at), 'MMM d, yyyy')}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-
-                    {/* Action Button */}
-                    {notification.action_url && notification.action_label && (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <a
-                          href={notification.action_url}
-                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    <div className="flex items-center space-x-2 ml-4">
+                      {!notification.is_read ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            markAsRead(notification.id)
+                          }}
+                          className={cn(
+                            isDarkMode 
+                              ? "border-gray-600 hover:bg-gray-700 hover:text-gray-200" 
+                              : "border-border hover:bg-accent hover:text-accent-foreground"
+                          )}
                         >
-                          {notification.action_label}
-                        </a>
-                      </div>
-                    )}
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            markAsUnread(notification.id)
+                          }}
+                          className={cn(
+                            isDarkMode 
+                              ? "border-gray-600 hover:bg-gray-700 hover:text-gray-200" 
+                              : "border-border hover:bg-accent hover:text-accent-foreground"
+                          )}
+                        >
+                          <EyeOff className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {!notification.is_acknowledged && (
+                        <Button
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            acknowledgeNotification(notification.id)
+                          }}
+                          className={cn(
+                            isDarkMode 
+                              ? "border-gray-600 hover:bg-gray-700 hover:text-gray-200" 
+                              : "border-border hover:bg-accent hover:text-accent-foreground"
+                          )}
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          deleteNotification(notification.id)
+                        }}
+                        className={cn(
+                          isDarkMode 
+                            ? "border-gray-600 hover:bg-gray-700 hover:text-gray-200" 
+                            : "border-border hover:bg-accent hover:text-accent-foreground"
+                        )}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Notification Settings */}
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle>Notification Settings</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-medium text-gray-900">Budget Alerts</h3>
-                <p className="text-sm text-gray-500">Get notified when you exceed budget limits</p>
-              </div>
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-medium text-gray-900">Savings Goals</h3>
-                <p className="text-sm text-gray-500">Updates on your savings progress</p>
-              </div>
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-medium text-gray-900">Recurring Transactions</h3>
-                <p className="text-sm text-gray-500">Alerts for recurring transaction issues</p>
-              </div>
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-medium text-gray-900">System Updates</h3>
-                <p className="text-sm text-gray-500">Important system notifications</p>
-              </div>
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
       </main>
     </div>
+  )
+}
+
+export default function NotificationsPage() {
+  return (
+    <AppLayout>
+      <NotificationsPageContent />
+    </AppLayout>
   )
 }

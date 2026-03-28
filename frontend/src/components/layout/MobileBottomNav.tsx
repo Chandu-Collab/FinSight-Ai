@@ -10,7 +10,7 @@ export default function MobileBottomNav() {
     { name: 'Income', href: '/income', icon: TrendingUp },
     { name: 'Expenses', href: '/expenses', icon: TrendingDown },
     { name: 'Budgets', href: '/budgets', icon: Target },
-    { name: 'More', href: '/more', icon: Repeat },
+    { name: 'Recurring', href: '/recurring', icon: Repeat },
   ]
 
   const isActive = (href: string) => {
