@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { reportsService } from '@/lib/reports'
 import { Report } from '@/types/report'
+import EnhancedReportGenerator from '@/components/reports/EnhancedReportGenerator'
 import { 
   FileText, 
-  Download, 
   Calendar, 
   TrendingUp, 
   TrendingDown, 
@@ -20,10 +20,12 @@ import {
   Search,
   Eye,
   Trash2,
-  Share2
+  Share2,
+  Settings
 } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export default function ReportsPage() {
   const router = useRouter()
@@ -52,13 +54,6 @@ export default function ReportsPage() {
       setLoading(false)
     }
   }
-
-  const filteredReports = reports.filter(report => {
-    const matchesSearch = report.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         report.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesFilter = filterType === 'all' || report.report_type === filterType
-    return matchesSearch && matchesFilter
-  })
 
   const handleGenerateReport = async (type: 'monthly' | 'quarterly' | 'yearly') => {
     try {
@@ -93,7 +88,6 @@ export default function ReportsPage() {
           start: format(start, 'yyyy-MM-dd'),
           end: format(end, 'yyyy-MM-dd')
         },
-        format: 'pdf',
         name: reportName
       }
 
@@ -106,16 +100,6 @@ export default function ReportsPage() {
       toast.error(error instanceof Error ? error.message : 'Failed to generate report')
     } finally {
       setGenerating(false)
-    }
-  }
-
-  const handleDownloadReport = (report: Report) => {
-    if (report.file_url) {
-      // TODO: Implement file download
-      console.log(`Downloading report: ${report.name}`)
-      toast.success('Report download started')
-    } else {
-      toast('Report file is being generated')
     }
   }
 
@@ -137,6 +121,13 @@ export default function ReportsPage() {
       toast.error(error instanceof Error ? error.message : 'Failed to delete report')
     }
   }
+
+  const filteredReports = reports.filter(report => {
+    const matchesSearch = report.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         report.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesFilter = filterType === 'all' || report.report_type === filterType
+    return matchesSearch && matchesFilter
+  })
 
   if (loading) {
     return (
@@ -191,202 +182,199 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Search and Filter */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Search reports..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant={filterType === 'all' ? 'default' : 'outline'}
-                  onClick={() => setFilterType('all')}
-                  size="sm"
-                >
-                  All
-                </Button>
-                <Button
-                  variant={filterType === 'monthly' ? 'default' : 'outline'}
-                  onClick={() => setFilterType('monthly')}
-                  size="sm"
-                >
-                  Monthly
-                </Button>
-                <Button
-                  variant={filterType === 'quarterly' ? 'default' : 'outline'}
-                  onClick={() => setFilterType('quarterly')}
-                  size="sm"
-                >
-                  Quarterly
-                </Button>
-                <Button
-                  variant={filterType === 'yearly' ? 'default' : 'outline'}
-                  onClick={() => setFilterType('yearly')}
-                  size="sm"
-                >
-                  Yearly
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Reports Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredReports.map((report) => (
-            <Card key={report.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className={`p-2 rounded-full ${
-                      report.report_type === 'monthly' ? 'bg-blue-100 text-blue-600' :
-                      report.report_type === 'quarterly' ? 'bg-green-100 text-green-600' :
-                      'bg-purple-100 text-purple-600'
-                    }`}>
-                      {report.report_type === 'monthly' ? <Calendar className="h-4 w-4" /> :
-                       report.report_type === 'quarterly' ? <BarChart3 className="h-4 w-4" /> :
-                       <PieChart className="h-4 w-4" />}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-foreground text-sm">
-                        {report.report_type.charAt(0).toUpperCase() + report.report_type.slice(1)}
-                      </h3>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(report.date_range.start), 'MMM dd, yyyy')} - {format(new Date(report.date_range.end), 'MMM dd, yyyy')}
-                      </p>
-                    </div>
+        {/* Enhanced Report Generator */}
+        <Tabs defaultValue="existing-reports" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="existing-reports">Existing Reports</TabsTrigger>
+            <TabsTrigger value="enhanced-generator">Enhanced Generator</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="existing-reports">
+            {/* Search and Filter */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="Search reports..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                    />
                   </div>
-                  <div className="flex space-x-1">
+                  <div className="flex gap-2">
                     <Button
+                      variant={filterType === 'all' ? 'default' : 'outline'}
+                      onClick={() => setFilterType('all')}
                       size="sm"
-                      variant="ghost"
-                      onClick={() => handleViewReport(report)}
                     >
-                      <Eye className="h-4 w-4" />
+                      All
                     </Button>
                     <Button
+                      variant={filterType === 'monthly' ? 'default' : 'outline'}
+                      onClick={() => setFilterType('monthly')}
                       size="sm"
-                      variant="ghost"
-                      onClick={() => handleDownloadReport(report)}
                     >
-                      <Download className="h-4 w-4" />
+                      Monthly
                     </Button>
                     <Button
+                      variant={filterType === 'quarterly' ? 'default' : 'outline'}
+                      onClick={() => setFilterType('quarterly')}
                       size="sm"
-                      variant="ghost"
-                      onClick={() => handleDeleteReport(report.id)}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      Quarterly
                     </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium text-foreground mb-2">{report.name}</h4>
-                    <p className="text-xs text-muted-foreground">
-                      Generated on {format(new Date(report.generated_at), 'MMM dd, yyyy')}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Status: <span className={`font-medium ${
-                        report.status === 'completed' ? 'text-green-600' :
-                        report.status === 'processing' ? 'text-yellow-600' :
-                        'text-red-600'
-                      }`}>
-                        {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
-                      </span>
-                    </p>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center space-x-2">
-                      <TrendingUp className="h-4 w-4 text-green-500" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Income</p>
-                        <p className="font-semibold text-foreground">
-                          ${report.data.total_income?.toLocaleString() || 0}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <TrendingDown className="h-4 w-4 text-red-500" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Expenses</p>
-                        <p className="font-semibold text-foreground">
-                          ${report.data.total_expenses?.toLocaleString() || 0}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <DollarSign className="h-4 w-4 text-blue-500" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Net Income</p>
-                        <p className="font-semibold text-foreground">
-                          ${report.data.net_income?.toLocaleString() || 0}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <BarChart3 className="h-4 w-4 text-purple-500" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Budgets</p>
-                        <p className="font-semibold text-foreground">
-                          {report.data.budget_count || 0}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="pt-2 border-t border-border">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">
-                        {report.data.savings_count || 0} savings goals
-                      </span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDownloadReport(report)}
-                        disabled={!report.file_url}
-                      >
-                        <Download className="h-3 w-3 mr-1" />
-                        Download
-                      </Button>
-                    </div>
+                    <Button
+                      variant={filterType === 'yearly' ? 'default' : 'outline'}
+                      onClick={() => setFilterType('yearly')}
+                      size="sm"
+                    >
+                      Yearly
+                    </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
 
-        {filteredReports.length === 0 && !loading && (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">No reports found</h3>
-              <p className="text-muted-foreground mb-4">
-                {searchTerm || filterType !== 'all' 
-                  ? 'Try adjusting your search or filter criteria' 
-                  : 'Generate your first financial report to get started'}
-              </p>
-              {!searchTerm && filterType === 'all' && (
-                <Button onClick={() => handleGenerateReport('monthly')} disabled={generating}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  {generating ? 'Generating...' : 'Generate Monthly Report'}
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        )}
+            {/* Reports Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredReports.map((report) => (
+                <Card key={report.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div className={`p-2 rounded-full ${
+                          report.report_type === 'monthly' ? 'bg-blue-100 text-blue-600' :
+                          report.report_type === 'quarterly' ? 'bg-green-100 text-green-600' :
+                          'bg-purple-100 text-purple-600'
+                        }`}>
+                          {report.report_type === 'monthly' ? <Calendar className="h-4 w-4" /> :
+                           report.report_type === 'quarterly' ? <BarChart3 className="h-4 w-4" /> :
+                           <PieChart className="h-4 w-4" />}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-foreground text-sm">
+                            {report.report_type.charAt(0).toUpperCase() + report.report_type.slice(1)}
+                          </h3>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(report.date_range.start), 'MMM dd, yyyy')} - {format(new Date(report.date_range.end), 'MMM dd, yyyy')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex space-x-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleViewReport(report)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDeleteReport(report.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-medium text-foreground mb-2">{report.name}</h4>
+                        <p className="text-xs text-muted-foreground">
+                          Generated on {format(new Date(report.generated_at), 'MMM dd, yyyy')}
+                        </p>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="flex items-center space-x-2">
+                          <TrendingUp className="h-4 w-4 text-green-500" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">Income</p>
+                            <p className="font-semibold text-foreground">
+                              ${report.data.total_income?.toLocaleString() || 0}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <TrendingDown className="h-4 w-4 text-red-500" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">Expenses</p>
+                            <p className="font-semibold text-foreground">
+                              ${report.data.total_expenses?.toLocaleString() || 0}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <DollarSign className="h-4 w-4 text-blue-500" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">Net Income</p>
+                            <p className="font-semibold text-foreground">
+                              ${report.data.net_income?.toLocaleString() || 0}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <BarChart3 className="h-4 w-4 text-purple-500" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">Budgets</p>
+                            <p className="font-semibold text-foreground">
+                              ${report.data.budget_count || 0}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="pt-2 border-t border-border">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">
+                            {report.data.savings_count || 0} savings goals
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleViewReport(report)}
+                          >
+                            <Eye className="h-3 w-3 mr-1" />
+                            View Report
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {filteredReports.length === 0 && !loading && (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-foreground mb-2">No reports found</h3>
+                  <p className="text-muted-foreground mb-4">
+                    {searchTerm || filterType !== 'all' 
+                      ? 'Try adjusting your search or filter criteria' 
+                      : 'Generate your first financial report to get started'}
+                  </p>
+                  {!searchTerm && filterType === 'all' && (
+                    <Button onClick={() => handleGenerateReport('monthly')} disabled={generating}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      {generating ? 'Generating...' : 'Generate Monthly Report'}
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="enhanced-generator">
+            <EnhancedReportGenerator />
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   )

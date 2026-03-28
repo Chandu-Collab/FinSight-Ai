@@ -6,7 +6,7 @@ import { incomeApi } from '@/lib/api/production'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { Plus, TrendingUp, Calendar, DollarSign, Edit, Trash2, Search, Filter, Download, BarChart3, ArrowUpRight, Wallet, PiggyBank, Target, X, Eye } from 'lucide-react'
+import { Plus, TrendingUp, Calendar, DollarSign, Edit, Trash2, Search, Filter, BarChart3, ArrowUpRight, Wallet, PiggyBank, Target, X, Eye } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
@@ -324,10 +324,6 @@ export default function IncomePage() {
               </div>
             </div>
             <div className="flex space-x-3">
-              <Button variant="outline" className="border-border hover:bg-accent">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
               <Button 
                 onClick={() => setShowAddModal(true)}
                 className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg transform transition-all duration-200 hover:scale-105"

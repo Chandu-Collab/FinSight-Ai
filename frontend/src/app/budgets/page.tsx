@@ -7,7 +7,7 @@ import { getCurrentUserId, isAuthenticated, setupDemoUser } from '@/lib/utils/us
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { Plus, TrendingUp, TrendingDown, AlertTriangle, Target, Calendar, DollarSign, Zap, Shield, AlertCircle, BarChart3, Filter, Download, Eye, X } from 'lucide-react'
+import { Plus, TrendingUp, TrendingDown, AlertTriangle, Target, Calendar, DollarSign, Zap, Shield, AlertCircle, BarChart3, Filter, Eye, X } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { format, startOfMonth, endOfMonth, subMonths, addMonths } from 'date-fns'
@@ -283,10 +283,6 @@ export default function BudgetsPage() {
                   </option>
                 ))}
               </select>
-              <Button variant="outline" className="border-border hover:bg-accent">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
               <Button 
                 onClick={() => setShowAddModal(true)}
                 className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 shadow-lg transform transition-all duration-200 hover:scale-105"

@@ -6,7 +6,7 @@ import { expenseApi } from '@/lib/api/production'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { Plus, TrendingDown, Calendar, CreditCard, Edit, Trash2, Search, Filter, Download, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, Wallet, Eye } from 'lucide-react'
+import { Plus, TrendingDown, Calendar, CreditCard, Edit, Trash2, Search, Filter, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, Wallet, Eye } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
@@ -172,10 +172,6 @@ export default function ExpensesPage() {
               </div>
             </div>
             <div className="flex space-x-3">
-              <Button variant="outline" className="border-border hover:bg-accent">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
               <Link href="/expenses/add">
                 <Button className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 shadow-lg transform transition-all duration-200 hover:scale-105">
                   <Plus className="h-4 w-4 mr-2" />
