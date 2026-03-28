@@ -26,7 +26,7 @@ const navigation = [
   { name: 'Income', href: '/income', icon: DollarSign },
   { name: 'Expenses', href: '/expenses', icon: CreditCard },
   { name: 'Budgets', href: '/budgets', icon: Target },
-  { name: 'Analytics', href: '/analytics', icon: TrendingUp },
+  { name: 'Savings Goals', href: '/savings-goals', icon: Target },
   { name: 'Reports', href: '/reports', icon: FileText },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
