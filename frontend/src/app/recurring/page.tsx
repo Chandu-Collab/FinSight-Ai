@@ -5,7 +5,7 @@ import { recurringApi, incomeApi, type RecurringTransaction, type Income } from 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { Plus, Repeat, Calendar, DollarSign, TrendingUp, TrendingDown, Play, Pause, Edit, Trash2, Wallet, Download, ArrowUpRight } from 'lucide-react'
+import { Plus, Repeat, Calendar, DollarSign, TrendingUp, TrendingDown, Play, Pause, Edit, Trash2, Wallet, ArrowUpRight, Eye } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { format, differenceInDays, isAfter, isBefore, addDays, addWeeks, addMonths, addYears } from 'date-fns'
@@ -183,6 +183,11 @@ export default function RecurringTransactionsPage() {
     }
   }
 
+  const handleView = (id: string) => {
+    // Navigate to detail page
+    window.location.href = `/recurring/${id}`
+  }
+
   const getFilteredTransactions = () => {
     return recurringTransactions.filter(transaction => {
       const typeMatch = filterType === 'all' || transaction.type === filterType
@@ -306,10 +311,6 @@ export default function RecurringTransactionsPage() {
               </div>
             </div>
             <div className="flex space-x-3">
-              <Button variant="outline" className="border-border hover:bg-accent">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
               <Link href="/recurring/create">
                 <Button className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-lg transform transition-all duration-200 hover:scale-105">
                   <Plus className="h-4 w-4 mr-2" />
@@ -548,6 +549,14 @@ export default function RecurringTransactionsPage() {
                           </p>
                         </div>
                         <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleView(transaction.id)}
+                            className="border-blue-500 hover:bg-blue-50 text-blue-600"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"

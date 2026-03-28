@@ -6,13 +6,16 @@ import { ArrowUpRight, ArrowDownRight, MoreHorizontal } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
 interface Transaction {
-  id: number
-  type: 'income' | 'expense'
+  id: string
+  user_id: string
   amount: number
-  category?: string
+  type: 'income' | 'expense'
   source?: string
+  category?: string
+  description?: string
   date: string
-  description: string
+  created_at?: string
+  updated_at?: string
 }
 
 interface RecentTransactionsProps {
@@ -20,6 +23,17 @@ interface RecentTransactionsProps {
 }
 
 export function RecentTransactions({ transactions }: RecentTransactionsProps) {
+  const getTransactionDescription = (transaction: Transaction) => {
+    if (transaction.description) return transaction.description
+    if (transaction.type === 'income') return transaction.source || 'Income'
+    return transaction.category || 'Expense'
+  }
+
+  const getTransactionCategory = (transaction: Transaction) => {
+    if (transaction.type === 'income') return transaction.source || 'Income'
+    return transaction.category || 'Expense'
+  }
+
   const getIcon = (type: 'income' | 'expense') => {
     if (type === 'income') {
       return (
@@ -54,9 +68,9 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
             <div className="flex items-center space-x-3">
               {getIcon(transaction.type)}
               <div>
-                <p className="font-medium text-card-foreground">{transaction.description}</p>
+                <p className="font-medium text-card-foreground">{getTransactionDescription(transaction)}</p>
                 <p className="text-sm text-muted-foreground">
-                  {transaction.category || transaction.source} • {formatDate(transaction.date)}
+                  {getTransactionCategory(transaction)} • {formatDate(transaction.date)}
                 </p>
               </div>
             </div>

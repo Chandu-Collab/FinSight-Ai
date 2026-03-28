@@ -23,7 +23,6 @@ import {
   AlertCircle,
   Search,
   Filter,
-  Download,
   BarChart3,
   ArrowUpRight,
   ArrowDownRight
@@ -210,20 +209,8 @@ export default function SavingsGoalsPage() {
   }
 
   const handleViewGoal = async (goalId: string) => {
-    if (!user?.id && !token) {
-      setError('User not authenticated')
-      return
-    }
-
-    try {
-      const response = await savingsGoalsAPI.getSavingsGoalById(goalId)
-      if (response.status === 'success') {
-        setEditingGoal(response.data)
-      }
-    } catch (error) {
-      console.error('Error fetching goal details:', error)
-      setError('Error loading goal details')
-    }
+    // Navigate to detail page instead of opening edit modal
+    window.location.href = `/savings-goals/${goalId}`
   }
 
   const formatCurrency = (amount: number | string | undefined | null) => {
@@ -313,10 +300,6 @@ export default function SavingsGoalsPage() {
                 </div>
               </div>
               <div className="flex space-x-3">
-                <Button variant="outline" className="border-border hover:bg-accent">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
                 <Button 
                   onClick={() => setShowCreateModal(true)}
                   className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg transform transition-all duration-200 hover:scale-105"
