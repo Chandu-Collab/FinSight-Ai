@@ -7,7 +7,7 @@ import { getCurrentUserId, isAuthenticated, setupDemoUser } from '@/lib/utils/us
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { Plus, TrendingUp, TrendingDown, AlertTriangle, Target, Calendar, DollarSign, Zap, Shield, AlertCircle, BarChart3, Filter, Download } from 'lucide-react'
+import { Plus, TrendingUp, TrendingDown, AlertTriangle, Target, Calendar, DollarSign, Zap, Shield, AlertCircle, BarChart3, Filter, Download, Eye, X } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { format, startOfMonth, endOfMonth, subMonths, addMonths } from 'date-fns'
@@ -27,6 +27,10 @@ interface BudgetWithStatus extends Budget {
   percentage: number
   status: 'safe' | 'warning' | 'danger' | 'exceeded'
   remaining: number
+  alert_threshold?: number
+  description?: string
+  is_active?: boolean
+  rollover?: boolean
 }
 
 const expenseCategories = [
@@ -59,6 +63,9 @@ export default function BudgetsPage() {
   const [budgets, setBudgets] = useState<BudgetWithStatus[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'))
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [editingBudget, setEditingBudget] = useState<BudgetWithStatus | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
   // Check authentication and get user ID dynamically using user utility
   const [rawBudgetData, setRawBudgetData] = useState<any>(null)
   const [userId, setUserId] = useState('')
@@ -161,6 +168,80 @@ export default function BudgetsPage() {
     })
   }
 
+  const handleView = (id: string) => {
+    router.push(`/budgets/${id}`)
+  }
+
+  const handleEdit = (budget: BudgetWithStatus) => {
+    setEditingBudget(budget)
+    setShowEditModal(true)
+  }
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false)
+    setEditingBudget(null)
+  }
+
+  const handleAddBudget = async (data: any) => {
+    try {
+      const { createBudget } = await import('@/lib/api/budgets')
+      await createBudget({
+        user_id: userId,
+        name: data.name,
+        category: data.category,
+        amount: Number(data.amount),
+        month: data.month,
+        alert_threshold: Number(data.alert_threshold),
+        description: data.description,
+        is_active: data.is_active,
+        rollover: data.rollover,
+        spent: Number(data.spent || 0),
+      })
+      toast.success('Budget created successfully!')
+      setShowAddModal(false)
+      fetchBudgetsData()
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create budget')
+      console.error('Error creating budget:', error)
+    }
+  }
+
+  const handleUpdateBudget = async (data: any) => {
+    if (!editingBudget) return
+
+    try {
+      const { updateBudget } = await import('@/lib/api/budgets')
+      await updateBudget(editingBudget.id, {
+        name: data.name,
+        category: data.category,
+        amount: Number(data.amount),
+        month: data.month,
+        alert_threshold: Number(data.alert_threshold),
+        description: data.description,
+        is_active: data.is_active,
+        rollover: data.rollover,
+      })
+      toast.success('Budget updated successfully!')
+      setShowEditModal(false)
+      setEditingBudget(null)
+      fetchBudgetsData()
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update budget')
+      console.error('Error updating budget:', error)
+    }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      await deleteBudget(id)
+      toast.success('Budget deleted successfully')
+      fetchBudgetsData()
+    } catch (error: any) {
+      toast.error('Failed to delete budget')
+      console.error('Error deleting budget:', error)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 flex items-center justify-center">
@@ -206,12 +287,13 @@ export default function BudgetsPage() {
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
-              <Link href="/budgets/create">
-                <Button className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 shadow-lg transform transition-all duration-200 hover:scale-105">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Budget
-                </Button>
-              </Link>
+              <Button 
+                onClick={() => setShowAddModal(true)}
+                className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 shadow-lg transform transition-all duration-200 hover:scale-105"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create Budget
+              </Button>
             </div>
           </div>
         </div>
@@ -337,12 +419,13 @@ export default function BudgetsPage() {
                 <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                   Create your first budget to start tracking your spending and stay within your financial goals.
                 </p>
-                <Link href="/budgets/create">
-                  <Button className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 shadow-lg transform transition-all duration-200 hover:scale-105">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Your First Budget
-                  </Button>
-                </Link>
+                <Button 
+                  onClick={() => setShowAddModal(true)}
+                  className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 shadow-lg transform transition-all duration-200 hover:scale-105"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Your First Budget
+                </Button>
               </div>
             ) : (
               <div className="space-y-6">
@@ -432,11 +515,23 @@ export default function BudgetsPage() {
 
                     {/* Actions */}
                     <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200/50">
-                      <Link href={`/budgets/${budget.id}/edit`}>
-                        <Button variant="outline" size="sm" className="border-blue-300 hover:bg-blue-50 text-blue-600">
-                          Edit Budget
-                        </Button>
-                      </Link>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleView(budget.id)}
+                        className="border-blue-500 hover:bg-blue-50 text-blue-600"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        View
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(budget)}
+                        className="border-blue-300 hover:bg-blue-50 text-blue-600"
+                      >
+                        Edit Budget
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -457,18 +552,484 @@ export default function BudgetsPage() {
           </CardContent>
         </Card>
       </main>
+      
+      {/* Add Budget Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-border">
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <h2 className="text-xl font-semibold text-foreground">Create New Budget</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAddModal(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="p-6">
+              <AddBudgetForm
+                onSubmit={handleAddBudget}
+                onCancel={() => setShowAddModal(false)}
+                userId={userId}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Edit Budget Modal */}
+      {showEditModal && editingBudget && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-border">
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <h2 className="text-xl font-semibold text-foreground">Edit Budget</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCloseEditModal}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="p-6">
+              <EditBudgetForm
+                budget={editingBudget}
+                onSubmit={handleUpdateBudget}
+                onCancel={handleCloseEditModal}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </AppLayout>
   )
+}
 
-  async function handleDelete(id: string) {
+// Add Budget Form Component
+function AddBudgetForm({ onSubmit, onCancel, userId }: { onSubmit: (data: any) => void; onCancel: () => void; userId: string }) {
+  const [formData, setFormData] = useState({
+    name: '',
+    category: '',
+    amount: '',
+    month: format(new Date(), 'yyyy-MM'),
+    alert_threshold: '80',
+    description: '',
+    is_active: true,
+    rollover: false,
+    spent: '0',
+  })
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const expenseCategories = [
+    'Food & Dining',
+    'Transportation',
+    'Shopping',
+    'Entertainment',
+    'Bills & Utilities',
+    'Healthcare',
+    'Education',
+    'Travel',
+    'Subscriptions',
+    'Other'
+  ]
+
+  const categoryIcons: Record<string, string> = {
+    'Food & Dining': '🍔',
+    'Transportation': '🚗',
+    'Shopping': '🛍',
+    'Entertainment': '🎬',
+    'Bills & Utilities': '📄',
+    'Healthcare': '🏥',
+    'Education': '📚',
+    'Travel': '✈️',
+    'Subscriptions': '📱',
+    'Other': '📌'
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    
     try {
-      await deleteBudget(id)
-      toast.success('Budget deleted successfully')
-      fetchBudgetsData()
-    } catch (error: any) {
-      toast.error('Failed to delete budget')
-      console.error('Error deleting budget:', error)
+      await onSubmit({ ...formData, user_id: userId })
+    } finally {
+      setIsSubmitting(false)
     }
   }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, type, checked } = e.target as any;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-2">
+          Budget Name *
+        </label>
+        <input
+          type="text"
+          name="name"
+          required
+          value={formData.name}
+          onChange={handleChange}
+          className="block w-full px-4 py-3 border border-input rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+          placeholder="e.g., Monthly Groceries"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-2">
+          Category *
+        </label>
+        <select
+          name="category"
+          required
+          value={formData.category}
+          onChange={handleChange}
+          className="block w-full px-4 py-3 border border-input rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+        >
+          <option value="">Select a category...</option>
+          {expenseCategories.map((category) => (
+            <option key={category} value={category}>
+              {categoryIcons[category]} {category}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-2">
+          Budget Amount *
+        </label>
+        <div className="relative rounded-xl shadow-sm">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <span className="text-muted-foreground sm:text-sm">$</span>
+          </div>
+          <input
+            type="number"
+            name="amount"
+            step="0.01"
+            min="0"
+            required
+            value={formData.amount}
+            onChange={handleChange}
+            className="block w-full pl-8 pr-12 py-3 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+            placeholder="0.00"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-2">
+          Budget Period *
+        </label>
+        <input
+          type="month"
+          name="month"
+          required
+          value={formData.month}
+          onChange={handleChange}
+          className="block w-full px-4 py-3 border border-input rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+          min="2020-01"
+          max="2030-12"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-2">
+          Alert Threshold
+        </label>
+        <select
+          name="alert_threshold"
+          value={formData.alert_threshold}
+          onChange={handleChange}
+          className="block w-full px-4 py-3 border border-input rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+        >
+          <option value="50">50% - Early Warning</option>
+          <option value="75">75% - Warning</option>
+          <option value="80">80% - Standard Warning</option>
+          <option value="90">90% - Critical Warning</option>
+          <option value="95">95% - Urgent Alert</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-2">
+          Description
+        </label>
+        <textarea
+          name="description"
+          rows={3}
+          value={formData.description}
+          onChange={handleChange}
+          className="block w-full px-4 py-3 border border-input rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+          placeholder="Optional description for this budget..."
+        />
+      </div>
+
+      <div className="space-y-3">
+        <label className="flex items-center space-x-3 cursor-pointer">
+          <input
+            name="is_active"
+            type="checkbox"
+            checked={formData.is_active}
+            onChange={handleChange}
+            className="w-4 h-4 text-primary border-input rounded focus:ring-primary"
+          />
+          <span className="text-sm font-medium text-foreground">Active Budget</span>
+        </label>
+        <label className="flex items-center space-x-3 cursor-pointer">
+          <input
+            name="rollover"
+            type="checkbox"
+            checked={formData.rollover}
+            onChange={handleChange}
+            className="w-4 h-4 text-primary border-input rounded focus:ring-primary"
+          />
+          <span className="text-sm font-medium text-foreground">Rollover Unused Amount</span>
+        </label>
+      </div>
+
+      <div className="flex justify-end space-x-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          className="border-border hover:bg-accent"
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 shadow-lg transform transition-all duration-200 hover:scale-105"
+        >
+          {isSubmitting ? 'Creating...' : 'Create Budget'}
+        </Button>
+      </div>
+    </form>
+  )
+}
+
+// Edit Budget Form Component
+function EditBudgetForm({ budget, onSubmit, onCancel }: { budget: BudgetWithStatus; onSubmit: (data: any) => void; onCancel: () => void }) {
+  const [formData, setFormData] = useState({
+    name: budget.name,
+    category: budget.category,
+    amount: budget.amount.toString(),
+    month: budget.month,
+    alert_threshold: budget.alert_threshold?.toString() || '80',
+    description: budget.description || '',
+    is_active: budget.is_active !== false,
+    rollover: budget.rollover || false,
+  })
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const expenseCategories = [
+    'Food & Dining',
+    'Transportation',
+    'Shopping',
+    'Entertainment',
+    'Bills & Utilities',
+    'Healthcare',
+    'Education',
+    'Travel',
+    'Subscriptions',
+    'Other'
+  ]
+
+  const categoryIcons: Record<string, string> = {
+    'Food & Dining': '🍔',
+    'Transportation': '🚗',
+    'Shopping': '🛍',
+    'Entertainment': '🎬',
+    'Bills & Utilities': '📄',
+    'Healthcare': '🏥',
+    'Education': '📚',
+    'Travel': '✈️',
+    'Subscriptions': '📱',
+    'Other': '📌'
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    
+    try {
+      await onSubmit(formData)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, type, checked } = e.target as any;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-2">
+          Budget Name *
+        </label>
+        <input
+          type="text"
+          name="name"
+          required
+          value={formData.name}
+          onChange={handleChange}
+          className="block w-full px-4 py-3 border border-input rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+          placeholder="e.g., Monthly Groceries"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-2">
+          Category *
+        </label>
+        <select
+          name="category"
+          required
+          value={formData.category}
+          onChange={handleChange}
+          className="block w-full px-4 py-3 border border-input rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+        >
+          <option value="">Select a category...</option>
+          {expenseCategories.map((category) => (
+            <option key={category} value={category}>
+              {categoryIcons[category]} {category}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-2">
+          Budget Amount *
+        </label>
+        <div className="relative rounded-xl shadow-sm">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <span className="text-muted-foreground sm:text-sm">$</span>
+          </div>
+          <input
+            type="number"
+            name="amount"
+            step="0.01"
+            min="0"
+            required
+            value={formData.amount}
+            onChange={handleChange}
+            className="block w-full pl-8 pr-12 py-3 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+            placeholder="0.00"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-2">
+          Budget Period *
+        </label>
+        <input
+          type="month"
+          name="month"
+          required
+          value={formData.month}
+          onChange={handleChange}
+          className="block w-full px-4 py-3 border border-input rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+          min="2020-01"
+          max="2030-12"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-2">
+          Alert Threshold
+        </label>
+        <select
+          name="alert_threshold"
+          value={formData.alert_threshold}
+          onChange={handleChange}
+          className="block w-full px-4 py-3 border border-input rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+        >
+          <option value="50">50% - Early Warning</option>
+          <option value="75">75% - Warning</option>
+          <option value="80">80% - Standard Warning</option>
+          <option value="90">90% - Critical Warning</option>
+          <option value="95">95% - Urgent Alert</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-2">
+          Description
+        </label>
+        <textarea
+          name="description"
+          rows={3}
+          value={formData.description}
+          onChange={handleChange}
+          className="block w-full px-4 py-3 border border-input rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+          placeholder="Optional description for this budget..."
+        />
+      </div>
+
+      <div className="space-y-3">
+        <label className="flex items-center space-x-3 cursor-pointer">
+          <input
+            name="is_active"
+            type="checkbox"
+            checked={formData.is_active}
+            onChange={handleChange}
+            className="w-4 h-4 text-primary border-input rounded focus:ring-primary"
+          />
+          <span className="text-sm font-medium text-foreground">Active Budget</span>
+        </label>
+        <label className="flex items-center space-x-3 cursor-pointer">
+          <input
+            name="rollover"
+            type="checkbox"
+            checked={formData.rollover}
+            onChange={handleChange}
+            className="w-4 h-4 text-primary border-input rounded focus:ring-primary"
+          />
+          <span className="text-sm font-medium text-foreground">Rollover Unused Amount</span>
+        </label>
+      </div>
+
+      <div className="flex justify-end space-x-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          className="border-border hover:bg-accent"
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 shadow-lg transform transition-all duration-200 hover:scale-105"
+        >
+          {isSubmitting ? 'Updating...' : 'Update Budget'}
+        </Button>
+      </div>
+    </form>
+  )
 }

@@ -127,17 +127,8 @@ export default function ExpensesPage() {
     }
   }
 
-  const handleView = async (id: string) => {
-    try {
-      const response = await expenseApi.getById(id)
-      if (response.data) {
-        // You can show a modal with full expense details here
-        toast.success('Expense details loaded')
-        console.log('Full expense data:', response.data)
-      }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to fetch expense details')
-    }
+  const handleView = (id: string) => {
+    router.push(`/expenses/${id}`)
   }
 
   const totalExpenses = filteredExpenses.reduce((sum, item) => {
@@ -410,7 +401,7 @@ export default function ExpensesPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleView(expense.id)}
-                              className="border-border hover:bg-accent text-foreground h-8 w-8 sm:h-auto sm:w-auto sm:px-3"
+                              className="border-blue-500 hover:bg-blue-50 text-blue-600 h-8 w-8 sm:h-auto sm:w-auto sm:px-3"
                             >
                               <Eye className="h-4 w-4" />
                               <span className="hidden sm:inline ml-1">View</span>

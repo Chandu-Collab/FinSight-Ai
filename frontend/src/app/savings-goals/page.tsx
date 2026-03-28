@@ -210,20 +210,8 @@ export default function SavingsGoalsPage() {
   }
 
   const handleViewGoal = async (goalId: string) => {
-    if (!user?.id && !token) {
-      setError('User not authenticated')
-      return
-    }
-
-    try {
-      const response = await savingsGoalsAPI.getSavingsGoalById(goalId)
-      if (response.status === 'success') {
-        setEditingGoal(response.data)
-      }
-    } catch (error) {
-      console.error('Error fetching goal details:', error)
-      setError('Error loading goal details')
-    }
+    // Navigate to detail page instead of opening edit modal
+    window.location.href = `/savings-goals/${goalId}`
   }
 
   const formatCurrency = (amount: number | string | undefined | null) => {

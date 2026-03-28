@@ -6,7 +6,7 @@ import { incomeApi } from '@/lib/api/production'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { Plus, TrendingUp, Calendar, DollarSign, Edit, Trash2, Search, Filter, Download, BarChart3, ArrowUpRight, Wallet, PiggyBank, Target, X } from 'lucide-react'
+import { Plus, TrendingUp, Calendar, DollarSign, Edit, Trash2, Search, Filter, Download, BarChart3, ArrowUpRight, Wallet, PiggyBank, Target, X, Eye } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
@@ -64,6 +64,7 @@ export default function IncomePage() {
   const [selectedSource, setSelectedSource] = useState('all')
   const [editingIncome, setEditingIncome] = useState<IncomeData | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showAddModal, setShowAddModal] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -212,6 +213,40 @@ export default function IncomePage() {
     setEditingIncome(null)
   }
 
+  const handleAddIncome = async (data: any) => {
+    try {
+      const userData = typeof window !== 'undefined' ? localStorage.getItem('user_data') : null
+      const userId = userData ? JSON.parse(userData).id : null
+      
+      if (!userId) {
+        toast.error('Please log in to add income')
+        return
+      }
+      
+      const response = await incomeApi.create({
+        user_id: userId,
+        amount: parseFloat(data.amount),
+        source: data.source,
+        description: data.description || undefined,
+        date: data.date,
+        category: data.category || undefined,
+        currency: data.currency || 'USD',
+        status: data.status || 'confirmed',
+        frequency: data.frequency || undefined,
+        tax_deducted: data.tax_deducted ? parseFloat(data.tax_deducted) : undefined
+      })
+
+      if (response.data) {
+        toast.success('Income added successfully!')
+        setShowAddModal(false)
+        fetchIncome() // Refresh the data
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to add income')
+      console.error('Error adding income:', error)
+    }
+  }
+
   const totalIncome = filteredIncome.reduce((sum, item) => sum + item.amount, 0)
   const sourceTotals = filteredIncome.reduce((acc, item) => {
     acc[item.source] = (acc[item.source] || 0) + item.amount
@@ -293,12 +328,13 @@ export default function IncomePage() {
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
-              <Link href="/income/add">
-                <Button className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg transform transition-all duration-200 hover:scale-105">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Income
-                </Button>
-              </Link>
+              <Button 
+                onClick={() => setShowAddModal(true)}
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg transform transition-all duration-200 hover:scale-105"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Income
+              </Button>
             </div>
           </div>
         </div>
@@ -465,12 +501,13 @@ export default function IncomePage() {
                     : 'Start by adding your first income record to begin tracking your earnings.'
                   }
                 </p>
-                <Link href="/income/add">
-                  <Button className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg transform transition-all duration-200 hover:scale-105">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Your First Income
-                  </Button>
-                </Link>
+                <Button 
+                  onClick={() => setShowAddModal(true)}
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg transform transition-all duration-200 hover:scale-105"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Your First Income
+                </Button>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -543,6 +580,17 @@ export default function IncomePage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex justify-end space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                router.push(`/income/${item.id}`)
+                              }}
+                              className="border-blue-500 hover:bg-blue-50 text-blue-600"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
                             {item.attachment_url && (
                               <Button
                                 variant="outline"
@@ -590,6 +638,32 @@ export default function IncomePage() {
         </Card>
       </main>
       
+      {/* Add Income Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-border">
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <h2 className="text-xl font-semibold text-foreground">Add New Income</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAddModal(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="p-6">
+              <AddIncomeForm
+                onSubmit={handleAddIncome}
+                onCancel={() => setShowAddModal(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Edit Modal */}
       {showEditModal && editingIncome && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -618,6 +692,187 @@ export default function IncomePage() {
       )}
     </div>
     </AppLayout>
+  )
+}
+
+// Add Income Form Component
+function AddIncomeForm({ onSubmit, onCancel }: { onSubmit: (data: any) => void; onCancel: () => void }) {
+  const [formData, setFormData] = useState({
+    amount: '',
+    source: '',
+    description: '',
+    date: new Date().toISOString().split('T')[0],
+    category: '',
+    currency: 'USD',
+    status: 'confirmed',
+    frequency: '',
+    tax_deducted: ''
+  })
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    
+    try {
+      await onSubmit(formData)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">Amount *</label>
+          <div className="relative">
+            <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <input
+              type="number"
+              step="0.01"
+              required
+              value={formData.amount}
+              onChange={(e) => handleChange('amount', e.target.value)}
+              className="pl-10 w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+              placeholder="0.00"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">Date *</label>
+          <div className="relative">
+            <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <input
+              type="date"
+              required
+              value={formData.date}
+              onChange={(e) => handleChange('date', e.target.value)}
+              className="pl-10 w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">Source *</label>
+          <select
+            required
+            value={formData.source}
+            onChange={(e) => handleChange('source', e.target.value)}
+            className="w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+          >
+            <option value="">Select source</option>
+            {incomeSources.map((source) => (
+              <option key={source} value={source}>{source}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">Category</label>
+          <input
+            type="text"
+            value={formData.category}
+            onChange={(e) => handleChange('category', e.target.value)}
+            className="w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+            placeholder="e.g., Job, Business"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">Currency</label>
+          <select
+            value={formData.currency}
+            onChange={(e) => handleChange('currency', e.target.value)}
+            className="w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+          >
+            <option value="USD">USD ($)</option>
+            <option value="EUR">EUR (€)</option>
+            <option value="GBP">GBP (£)</option>
+            <option value="RUPEE">RUPEE (₹)</option>
+            <option value="JPY">JPY (¥)</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">Status</label>
+          <select
+            value={formData.status}
+            onChange={(e) => handleChange('status', e.target.value)}
+            className="w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+          >
+            <option value="confirmed">Confirmed</option>
+            <option value="pending">Pending</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">Frequency</label>
+          <select
+            value={formData.frequency}
+            onChange={(e) => handleChange('frequency', e.target.value)}
+            className="w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+          >
+            <option value="">One-time</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">Tax Deducted</label>
+          <div className="relative">
+            <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <input
+              type="number"
+              step="0.01"
+              value={formData.tax_deducted}
+              onChange={(e) => handleChange('tax_deducted', e.target.value)}
+              className="pl-10 w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+              placeholder="0.00"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-2">Description</label>
+        <textarea
+          value={formData.description}
+          onChange={(e) => handleChange('description', e.target.value)}
+          rows={3}
+          className="w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background resize-none"
+          placeholder="Add any additional notes..."
+        />
+      </div>
+
+      <div className="flex justify-end space-x-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          className="border-border hover:bg-accent"
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg transform transition-all duration-200 hover:scale-105"
+        >
+          {isSubmitting ? 'Adding...' : 'Add Income'}
+        </Button>
+      </div>
+    </form>
   )
 }
 
