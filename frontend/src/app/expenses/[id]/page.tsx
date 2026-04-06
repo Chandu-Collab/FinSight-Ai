@@ -185,7 +185,7 @@ export default function ExpenseDetailPage() {
                       <div>
                         <p className="text-sm font-medium text-red-600 dark:text-red-400">Amount</p>
                         <p className="text-3xl font-bold text-red-700 dark:text-red-300">
-                          -${expense.amount.toLocaleString()}
+                          -₹{expense.amount.toLocaleString()}
                         </p>
                       </div>
                       <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl flex items-center justify-center">

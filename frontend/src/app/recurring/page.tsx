@@ -44,11 +44,11 @@ export default function RecurringTransactionsPage() {
       const userData = typeof window !== 'undefined' ? localStorage.getItem('user_data') : null
       const userId = userData ? JSON.parse(userData).id : null
       
-      console.log('🔍 Fetching recurring transactions for userId:', userId)
-      console.log('👤 User data from localStorage:', userData)
+      console.log('ðŸ” Fetching recurring transactions for userId:', userId)
+      console.log('ðŸ‘¤ User data from localStorage:', userData)
       
       if (!userId) {
-        console.warn('⚠️ No user ID found - user might not be logged in')
+        console.warn('âš ï¸ No user ID found - user might not be logged in')
         toast.error('Please log in to view recurring transactions')
         setRecurringTransactions([])
         setIncomeData([])
@@ -62,18 +62,18 @@ export default function RecurringTransactionsPage() {
         incomeApi.getAll(userId)
       ])
       
-      console.log('📊 Recurring API Response:', recurringResponse)
-      console.log('💰 Income API Response:', incomeResponse)
+      console.log('ðŸ“Š Recurring API Response:', recurringResponse)
+      console.log('ðŸ’° Income API Response:', incomeResponse)
       
       // Process recurring transactions
       if (recurringResponse.data && Array.isArray(recurringResponse.data)) {
-        console.log('📋 Raw recurring transactions data:', recurringResponse.data)
+        console.log('ðŸ“‹ Raw recurring transactions data:', recurringResponse.data)
         const processedTransactions = recurringResponse.data.map(processRecurringTransaction)
         setRecurringTransactions(processedTransactions)
         
         if (processedTransactions.length === 0) {
           toast('No recurring transactions found. Create your first recurring transaction!', {
-            icon: '🔄',
+            icon: 'ðŸ”„',
             style: {
               background: '#8b5cf6',
               color: 'white',
@@ -81,21 +81,21 @@ export default function RecurringTransactionsPage() {
           })
         }
       } else {
-        console.log('⚠️ No recurring data received from API')
+        console.log('âš ï¸ No recurring data received from API')
         setRecurringTransactions([])
       }
       
       // Process income data
       if (incomeResponse.data && Array.isArray(incomeResponse.data)) {
-        console.log('💰 Raw income data:', incomeResponse.data)
+        console.log('ðŸ’° Raw income data:', incomeResponse.data)
         setIncomeData(incomeResponse.data)
       } else {
-        console.log('⚠️ No income data received from API')
+        console.log('âš ï¸ No income data received from API')
         setIncomeData([])
       }
     } catch (error: any) {
       const errorMessage = error?.message || 'Failed to fetch data'
-      console.error('❌ Error fetching data:', error)
+      console.error('âŒ Error fetching data:', error)
       toast.error(errorMessage)
       setRecurringTransactions([]) // Set empty array on error to prevent UI crashes
       setIncomeData([])
@@ -128,12 +128,12 @@ export default function RecurringTransactionsPage() {
 
     return {
       ...transaction,
-      formattedAmount: `$${typeof transaction.amount === 'number' ? transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : Number(transaction.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      formattedAmount: `₹${typeof transaction.amount === 'number' ? transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : Number(transaction.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       formattedNextDate: format(nextDate, 'MMM d, yyyy'),
       formattedStartDate: format(new Date(transaction.start_date || transaction.created_at), 'MMM d, yyyy'),
       formattedEndDate: transaction.end_date ? format(new Date(transaction.end_date), 'MMM d, yyyy') : undefined,
       frequencyLabel: frequencyLabels[transaction.frequency],
-      typeIcon: transaction.type === 'income' ? '📈' : '📉',
+      typeIcon: transaction.type === 'income' ? 'ðŸ“ˆ' : 'ðŸ“‰',
       typeColor: transaction.type === 'income' ? 'text-green-600' : 'text-red-600',
       progressPercentage,
       daysUntilNext,
@@ -270,7 +270,7 @@ export default function RecurringTransactionsPage() {
   const netMonthly = currentMonthIncome - expectedMonthlyExpenses
 
   // Debug logging to check calculations
-  console.log('📊 Recurring Transactions Stats:')
+  console.log('ðŸ“Š Recurring Transactions Stats:')
   console.log('- Actual Current Month Income:', currentMonthIncome)
   console.log('- Expected Monthly Expenses:', expectedMonthlyExpenses)
   console.log('- Net Monthly:', netMonthly)
@@ -333,7 +333,7 @@ export default function RecurringTransactionsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                ${currentMonthIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ₹{currentMonthIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
               <p className="text-xs text-muted-foreground">
                 From {incomeData.length} income records this month
@@ -352,7 +352,7 @@ export default function RecurringTransactionsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">
-                ${expectedMonthlyExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ₹{expectedMonthlyExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
               <p className="text-xs text-muted-foreground">
                 From {filteredTransactions.filter(t => t.type === 'expense' && t.is_active).length} active recurring expenses
@@ -371,7 +371,7 @@ export default function RecurringTransactionsPage() {
             </CardHeader>
             <CardContent>
               <div className={`text-2xl font-bold ${netMonthly >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-                ${Math.abs(netMonthly).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ₹{Math.abs(netMonthly).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
               <p className="text-xs text-muted-foreground">
                 {netMonthly >= 0 ? 'Positive cash flow' : 'Negative cash flow'}
@@ -427,7 +427,7 @@ export default function RecurringTransactionsPage() {
               size="sm"
               className="flex items-center space-x-1"
             >
-              <span>📈</span>
+              <span>ðŸ“ˆ</span>
               Income
             </Button>
             <Button
@@ -436,7 +436,7 @@ export default function RecurringTransactionsPage() {
               size="sm"
               className="flex items-center space-x-1"
             >
-              <span>📉</span>
+              <span>ðŸ“‰</span>
               Expenses
             </Button>
           </div>
@@ -545,7 +545,7 @@ export default function RecurringTransactionsPage() {
                           </p>
                           <p className="text-xs text-gray-500">
                             {transaction.is_active ? 'Active' : 'Paused'}
-                            {transaction.isOverdue && ' • Overdue'}
+                            {transaction.isOverdue && ' â€¢ Overdue'}
                           </p>
                         </div>
                         <div className="flex space-x-2">

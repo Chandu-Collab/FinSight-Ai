@@ -273,11 +273,11 @@ export default function BudgetAlerts() {
                     <div className="mt-2 grid grid-cols-3 gap-4 text-xs">
                       <div>
                         <span className="opacity-75">Budget:</span>
-                        <span className="ml-1 font-medium">${alert.budget_amount.toLocaleString()}</span>
+                        <span className="ml-1 font-medium">₹{alert.budget_amount.toLocaleString()}</span>
                       </div>
                       <div>
                         <span className="opacity-75">Spent:</span>
-                        <span className="ml-1 font-medium">${alert.amount_spent.toLocaleString()}</span>
+                        <span className="ml-1 font-medium">₹{alert.amount_spent.toLocaleString()}</span>
                       </div>
                       <div>
                         <span className="opacity-75">Remaining:</span>

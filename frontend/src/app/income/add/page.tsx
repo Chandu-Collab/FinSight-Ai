@@ -117,11 +117,11 @@ export default function AddIncomePage() {
                     <label className="block text-sm font-medium text-foreground mb-2">Currency</label>
                     <select value={formData.currency} onChange={(e) => handleChange('currency', e.target.value)}
                       className="w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background">
-                      <option value="USD">USD ($)</option>
-                      <option value="EUR">EUR (€)</option>
-                      <option value="GBP">GBP (£)</option>
-                      <option value="RUPEE">RUPEE (₹)</option>
-                      <option value="JPY">JPY (¥)</option>
+                      <option value="USD">USD (₹)</option>
+                      <option value="EUR">EUR (â‚¬)</option>
+                      <option value="GBP">GBP (Â£)</option>
+                      <option value="RUPEE">RUPEE (â‚¹)</option>
+                      <option value="JPY">JPY (Â¥)</option>
                     </select>
                   </div>
                   <div>
