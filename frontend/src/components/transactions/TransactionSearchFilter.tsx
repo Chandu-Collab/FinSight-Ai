@@ -375,11 +375,11 @@ export default function TransactionSearchFilter({
               className="block w-full px-3 py-2 border border-input rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent sm:text-sm"
             >
               <option value="all">All Amounts</option>
-              <option value="under100">Under $100</option>
-              <option value="100to500">$100 - $500</option>
-              <option value="500to1000">$500 - $1,000</option>
-              <option value="1000to5000">$1,000 - $5,000</option>
-              <option value="over5000">Over $5,000</option>
+              <option value="under100">Under ₹100</option>
+              <option value="100to500">₹100 - ₹500</option>
+              <option value="500to1000">₹500 - ₹1,000</option>
+              <option value="1000to5000">₹1,000 - ₹5,000</option>
+              <option value="over5000">Over ₹5,000</option>
             </select>
           </div>
         </div>
@@ -417,7 +417,7 @@ export default function TransactionSearchFilter({
                 <label className="block text-sm font-medium text-foreground mb-2">Min Amount</label>
                 <div className="relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-muted-foreground sm:text-sm">$</span>
+                    <span className="text-muted-foreground sm:text-sm">₹</span>
                   </div>
                   <input
                     type="number"
@@ -432,7 +432,7 @@ export default function TransactionSearchFilter({
                 <label className="block text-sm font-medium text-foreground mb-2">Max Amount</label>
                 <div className="relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-muted-foreground sm:text-sm">$</span>
+                    <span className="text-muted-foreground sm:text-sm">₹</span>
                   </div>
                   <input
                     type="number"

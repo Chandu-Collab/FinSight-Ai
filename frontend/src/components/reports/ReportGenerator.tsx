@@ -114,9 +114,9 @@ export default class ReportGenerator {
 
     // Summary section
     yPosition = addText('FINANCIAL OVERVIEW', 14, 20, yPosition)
-    yPosition = addText(`Total Income: $${totalIncome.toLocaleString()}`, 12, 20, yPosition)
-    yPosition = addText(`Total Expenses: $${totalExpenses.toLocaleString()}`, 12, 20, yPosition)
-    yPosition = addText(`Net Income: $${netIncome.toLocaleString()}`, 12, 20, yPosition)
+    yPosition = addText(`Total Income: ₹${totalIncome.toLocaleString()}`, 12, 20, yPosition)
+    yPosition = addText(`Total Expenses: ₹${totalExpenses.toLocaleString()}`, 12, 20, yPosition)
+    yPosition = addText(`Net Income: ₹${netIncome.toLocaleString()}`, 12, 20, yPosition)
     yPosition += 10
 
     // Income by source
@@ -127,7 +127,7 @@ export default class ReportGenerator {
 
     yPosition = addText('INCOME BY SOURCE', 14, 20, yPosition)
     Object.entries(incomeBySource).forEach(([source, amount]) => {
-      yPosition = addText(`${source}: $${amount.toLocaleString()}`, 10, 30, yPosition)
+      yPosition = addText(`${source}: ₹${amount.toLocaleString()}`, 10, 30, yPosition)
     })
     yPosition += 10
 
@@ -139,7 +139,7 @@ export default class ReportGenerator {
 
     yPosition = addText('EXPENSES BY CATEGORY', 14, 20, yPosition)
     Object.entries(expensesByCategory).forEach(([category, amount]) => {
-      yPosition = addText(`${category}: $${amount.toLocaleString()}`, 10, 30, yPosition)
+      yPosition = addText(`${category}: ₹${amount.toLocaleString()}`, 10, 30, yPosition)
     })
 
     return yPosition
@@ -151,7 +151,7 @@ export default class ReportGenerator {
     yPosition = addText('Date,Source,Amount,Description', 10, 20, yPosition)
     
     data.income.forEach(item => {
-      const row = `${format(new Date(item.date), 'MMM d, yyyy')},${item.source},$${item.amount},${item.description || ''}`
+      const row = `${format(new Date(item.date), 'MMM d, yyyy')},${item.source},₹${item.amount},${item.description || ''}`
       yPosition = addText(row, 9, 20, yPosition)
     })
 
@@ -162,7 +162,7 @@ export default class ReportGenerator {
     yPosition = addText('Date,Category,Amount,Description', 10, 20, yPosition)
     
     data.expenses.forEach(item => {
-      const row = `${format(new Date(item.date), 'MMM d, yyyy')},${item.category},$${item.amount},${item.description || ''}`
+      const row = `${format(new Date(item.date), 'MMM d, yyyy')},${item.category},₹${item.amount},${item.description || ''}`
       yPosition = addText(row, 9, 20, yPosition)
     })
 
@@ -187,9 +187,9 @@ export default class ReportGenerator {
     
     budgetUtilization.forEach(budget => {
       yPosition = addText(`${budget.category}:`, 12, 20, yPosition)
-      yPosition = addText(`  Budgeted: $${budget.amount.toLocaleString()}`, 10, 30, yPosition)
-      yPosition = addText(`  Spent: $${budget.spent.toLocaleString()}`, 10, 30, yPosition)
-      yPosition = addText(`  Remaining: $${budget.remaining.toLocaleString()}`, 10, 30, yPosition)
+      yPosition = addText(`  Budgeted: ₹${budget.amount.toLocaleString()}`, 10, 30, yPosition)
+      yPosition = addText(`  Spent: ₹${budget.spent.toLocaleString()}`, 10, 30, yPosition)
+      yPosition = addText(`  Remaining: ₹${budget.remaining.toLocaleString()}`, 10, 30, yPosition)
       yPosition = addText(`  Utilization: ${budget.utilization.toFixed(1)}%`, 10, 30, yPosition)
       yPosition += 5
     })
@@ -208,9 +208,9 @@ export default class ReportGenerator {
     
     savingsProgress.forEach(goal => {
       yPosition = addText(`${goal.name}:`, 12, 20, yPosition)
-      yPosition = addText(`  Target: $${goal.target_amount.toLocaleString()}`, 10, 30, yPosition)
-      yPosition = addText(`  Current: $${goal.current_amount.toLocaleString()}`, 10, 30, yPosition)
-      yPosition = addText(`  Remaining: $${(goal.target_amount - goal.current_amount).toLocaleString()}`, 10, 30, yPosition)
+      yPosition = addText(`  Target: ₹${goal.target_amount.toLocaleString()}`, 10, 30, yPosition)
+      yPosition = addText(`  Current: ₹${goal.current_amount.toLocaleString()}`, 10, 30, yPosition)
+      yPosition = addText(`  Remaining: ₹${(goal.target_amount - goal.current_amount).toLocaleString()}`, 10, 30, yPosition)
       yPosition = addText(`  Progress: ${goal.progress.toFixed(1)}%`, 10, 30, yPosition)
       yPosition += 5
     })
@@ -231,7 +231,7 @@ export default class ReportGenerator {
     yPosition = addText('RECURRING INCOME', 14, 20, yPosition)
     
     incomeRecurring.forEach(rt => {
-      yPosition = addText(`${rt.name}: $${rt.amount} (${rt.frequency})`, 10, 20, yPosition)
+      yPosition = addText(`${rt.name}: ₹${rt.amount} (${rt.frequency})`, 10, 20, yPosition)
     })
 
     yPosition += 10
@@ -241,7 +241,7 @@ export default class ReportGenerator {
     yPosition = addText('RECURRING EXPENSES', 14, 20, yPosition)
     
     expenseRecurring.forEach(rt => {
-      yPosition = addText(`${rt.name}: $${rt.amount} (${rt.frequency})`, 10, 20, yPosition)
+      yPosition = addText(`${rt.name}: ₹${rt.amount} (${rt.frequency})`, 10, 20, yPosition)
     })
 
     return yPosition

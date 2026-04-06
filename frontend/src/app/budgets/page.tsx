@@ -47,16 +47,16 @@ const expenseCategories = [
 ]
 
 const categoryIcons: Record<string, { icon: string, gradient: string }> = {
-  'Food & Dining': { icon: '🍔', gradient: 'from-orange-500 to-red-500' },
-  'Transportation': { icon: '🚗', gradient: 'from-blue-500 to-cyan-500' },
-  'Shopping': { icon: '🛍', gradient: 'from-purple-500 to-pink-500' },
-  'Entertainment': { icon: '🎬', gradient: 'from-pink-500 to-rose-500' },
-  'Bills & Utilities': { icon: '📄', gradient: 'from-gray-500 to-slate-500' },
-  'Healthcare': { icon: '🏥', gradient: 'from-green-500 to-emerald-500' },
-  'Education': { icon: '📚', gradient: 'from-indigo-500 to-purple-500' },
-  'Travel': { icon: '✈️', gradient: 'from-yellow-500 to-amber-500' },
-  'Subscriptions': { icon: '📱', gradient: 'from-teal-500 to-green-500' },
-  'Other': { icon: '📌', gradient: 'from-gray-500 to-slate-500' }
+  'Food & Dining': { icon: 'ðŸ”', gradient: 'from-orange-500 to-red-500' },
+  'Transportation': { icon: 'ðŸš—', gradient: 'from-blue-500 to-cyan-500' },
+  'Shopping': { icon: 'ðŸ›', gradient: 'from-purple-500 to-pink-500' },
+  'Entertainment': { icon: 'ðŸŽ¬', gradient: 'from-pink-500 to-rose-500' },
+  'Bills & Utilities': { icon: 'ðŸ“„', gradient: 'from-gray-500 to-slate-500' },
+  'Healthcare': { icon: 'ðŸ¥', gradient: 'from-green-500 to-emerald-500' },
+  'Education': { icon: 'ðŸ“š', gradient: 'from-indigo-500 to-purple-500' },
+  'Travel': { icon: 'âœˆï¸', gradient: 'from-yellow-500 to-amber-500' },
+  'Subscriptions': { icon: 'ðŸ“±', gradient: 'from-teal-500 to-green-500' },
+  'Other': { icon: 'ðŸ“Œ', gradient: 'from-gray-500 to-slate-500' }
 }
 
 export default function BudgetsPage() {
@@ -308,7 +308,7 @@ export default function BudgetsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-blue-600">
-                ${totalBudgeted.toLocaleString()}
+                ₹{totalBudgeted.toLocaleString()}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 For {format(new Date(selectedMonth), 'MMMM yyyy')}
@@ -329,7 +329,7 @@ export default function BudgetsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-orange-600">
-                ${totalSpent.toLocaleString()}
+                ₹{totalSpent.toLocaleString()}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {overallPercentage.toFixed(1)}% of budget
@@ -352,7 +352,7 @@ export default function BudgetsPage() {
             </CardHeader>
             <CardContent>
               <div className={`text-3xl font-bold ${totalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ${Math.abs(totalRemaining).toLocaleString()}
+                ₹{Math.abs(totalRemaining).toLocaleString()}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {totalRemaining >= 0 ? 'Under budget' : 'Over budget'}
@@ -465,24 +465,24 @@ export default function BudgetsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                       <div className="bg-blue-50/50 rounded-xl p-4 border border-blue-200/50">
                         <p className="text-sm text-blue-600 font-medium mb-1">Budget</p>
-                        <p className="text-xl font-bold text-blue-900">${budget.amount.toLocaleString()}</p>
+                        <p className="text-xl font-bold text-blue-900">₹{budget.amount.toLocaleString()}</p>
                       </div>
                       <div className="bg-orange-50/50 rounded-xl p-4 border border-orange-200/50">
                         <p className="text-sm text-orange-600 font-medium mb-1">Spent</p>
-                        <p className="text-xl font-bold text-orange-900">${budget.spent.toLocaleString()}</p>
+                        <p className="text-xl font-bold text-orange-900">₹{budget.spent.toLocaleString()}</p>
                       </div>
                       <div className={`${budget.remaining >= 0 ? 'bg-green-50/50 border-green-200/50' : 'bg-red-50/50 border-red-200/50'} rounded-xl p-4 border`}>
                         <p className={`text-sm ${budget.remaining >= 0 ? 'text-green-600' : 'text-red-600'} font-medium mb-1`}>
                           {budget.remaining >= 0 ? 'Remaining' : 'Over'}
                         </p>
                         <p className={`text-xl font-bold ${budget.remaining >= 0 ? 'text-green-900' : 'text-red-900'}`}>
-                          ${Math.abs(budget.remaining).toLocaleString()}
+                          ₹{Math.abs(budget.remaining).toLocaleString()}
                         </p>
                       </div>
                       <div className="bg-purple-50/50 rounded-xl p-4 border border-purple-200/50">
                         <p className="text-sm text-purple-600 font-medium mb-1">Daily Avg</p>
                         <p className="text-xl font-bold text-purple-900">
-                          ${(budget.spent / Math.max(1, new Date().getDate())).toFixed(0)}
+                          ₹{(budget.spent / Math.max(1, new Date().getDate())).toFixed(0)}
                         </p>
                       </div>
                     </div>
@@ -637,16 +637,16 @@ function AddBudgetForm({ onSubmit, onCancel, userId }: { onSubmit: (data: any) =
   ]
 
   const categoryIcons: Record<string, string> = {
-    'Food & Dining': '🍔',
-    'Transportation': '🚗',
-    'Shopping': '🛍',
-    'Entertainment': '🎬',
-    'Bills & Utilities': '📄',
-    'Healthcare': '🏥',
-    'Education': '📚',
-    'Travel': '✈️',
-    'Subscriptions': '📱',
-    'Other': '📌'
+    'Food & Dining': 'ðŸ”',
+    'Transportation': 'ðŸš—',
+    'Shopping': 'ðŸ›',
+    'Entertainment': 'ðŸŽ¬',
+    'Bills & Utilities': 'ðŸ“„',
+    'Healthcare': 'ðŸ¥',
+    'Education': 'ðŸ“š',
+    'Travel': 'âœˆï¸',
+    'Subscriptions': 'ðŸ“±',
+    'Other': 'ðŸ“Œ'
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -711,7 +711,7 @@ function AddBudgetForm({ onSubmit, onCancel, userId }: { onSubmit: (data: any) =
         </label>
         <div className="relative rounded-xl shadow-sm">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <span className="text-muted-foreground sm:text-sm">$</span>
+            <span className="text-muted-foreground sm:text-sm">₹</span>
           </div>
           <input
             type="number"
@@ -848,16 +848,16 @@ function EditBudgetForm({ budget, onSubmit, onCancel }: { budget: BudgetWithStat
   ]
 
   const categoryIcons: Record<string, string> = {
-    'Food & Dining': '🍔',
-    'Transportation': '🚗',
-    'Shopping': '🛍',
-    'Entertainment': '🎬',
-    'Bills & Utilities': '📄',
-    'Healthcare': '🏥',
-    'Education': '📚',
-    'Travel': '✈️',
-    'Subscriptions': '📱',
-    'Other': '📌'
+    'Food & Dining': 'ðŸ”',
+    'Transportation': 'ðŸš—',
+    'Shopping': 'ðŸ›',
+    'Entertainment': 'ðŸŽ¬',
+    'Bills & Utilities': 'ðŸ“„',
+    'Healthcare': 'ðŸ¥',
+    'Education': 'ðŸ“š',
+    'Travel': 'âœˆï¸',
+    'Subscriptions': 'ðŸ“±',
+    'Other': 'ðŸ“Œ'
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -922,7 +922,7 @@ function EditBudgetForm({ budget, onSubmit, onCancel }: { budget: BudgetWithStat
         </label>
         <div className="relative rounded-xl shadow-sm">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <span className="text-muted-foreground sm:text-sm">$</span>
+            <span className="text-muted-foreground sm:text-sm">₹</span>
           </div>
           <input
             type="number"

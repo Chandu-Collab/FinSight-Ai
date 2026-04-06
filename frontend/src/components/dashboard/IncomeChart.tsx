@@ -44,7 +44,7 @@ export function IncomeChart() {
         amount: typeof item.amount === 'string' ? parseFloat(item.amount) : item.amount
       })) : []
 
-      console.log('📈 Income chart data:', incomeData)
+      console.log('ðŸ“ˆ Income chart data:', incomeData)
 
       // Group income by month for the last 6 months
       const monthlyIncome = new Map<string, number>()
@@ -82,7 +82,7 @@ export function IncomeChart() {
         income
       }))
 
-      console.log('📊 Processed chart data:', chartData)
+      console.log('ðŸ“Š Processed chart data:', chartData)
       setData(chartData)
     } catch (error) {
       console.error('Error fetching income data for chart:', error)
@@ -132,10 +132,10 @@ export function IncomeChart() {
             <YAxis 
               stroke="var(--tw-prose-invert-borders, #6b7280)"
               fontSize={12}
-              tickFormatter={(value) => `$${value}`}
+              tickFormatter={(value) => `₹${value}`}
             />
             <Tooltip 
-              formatter={(value: number) => [`$${value.toLocaleString()}`, 'Income']}
+              formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Income']}
               contentStyle={{
                 backgroundColor: 'hsl(var(--card))',
                 border: '1px solid hsl(var(--border))',
@@ -156,7 +156,7 @@ export function IncomeChart() {
       </div>
 
       <div className="mt-4 text-sm text-muted-foreground">
-        <p>Average monthly income: <span className="font-semibold text-card-foreground">${averageIncome.toLocaleString()}</span></p>
+        <p>Average monthly income: <span className="font-semibold text-card-foreground">₹{averageIncome.toLocaleString()}</span></p>
       </div>
     </Card>
   )

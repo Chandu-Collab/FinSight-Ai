@@ -12,7 +12,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Loader2, Plus, Trash2, TrendingUp, DollarSign, Brain } from 'lucide-react'
 import { mlApi, LinearPredictionRequest, LinearPredictionResponse } from '@/lib/api/production'
-import { formatCurrency } from '@/lib/utils'
+
+const formatCurrencyINR = (amount: number): string => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 2,
+  }).format(amount)
+}
 
 const Badge = ({ children, variant = "default" }: { children: React.ReactNode, variant?: "default" | "secondary" }) => (
   <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -336,7 +343,7 @@ export function LinearPredictionForm() {
               <div className="text-center p-4 bg-primary/10 rounded-lg">
                 <p className="text-sm text-muted-foreground">Predicted Value</p>
                 <p className="text-3xl font-bold text-primary">
-                  {!isNaN(result.prediction.value) ? formatCurrency(result.prediction.value) : 'Invalid Value'}
+                  {!isNaN(result.prediction.value) ? formatCurrencyINR(result.prediction.value) : 'Invalid Value'}
                 </p>
               </div>
 

@@ -131,10 +131,10 @@ export function ExpenseChart() {
             <YAxis 
               stroke="var(--tw-prose-invert-borders, #6b7280)"
               fontSize={12}
-              tickFormatter={(value) => `$${value}`}
+              tickFormatter={(value) => `₹${value}`}
             />
             <Tooltip 
-              formatter={(value: number) => [`$${value.toLocaleString()}`, 'Expenses']}
+              formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Expenses']}
               contentStyle={{
                 backgroundColor: 'hsl(var(--card))',
                 border: '1px solid hsl(var(--border))',
@@ -155,7 +155,7 @@ export function ExpenseChart() {
       </div>
 
       <div className="mt-4 text-sm text-muted-foreground">
-        <p>Average monthly expenses: <span className="font-semibold text-card-foreground">${isNaN(averageExpenses) ? '0' : averageExpenses.toLocaleString()}</span></p>
+        <p>Average monthly expenses: <span className="font-semibold text-card-foreground">₹{isNaN(averageExpenses) ? '0' : averageExpenses.toLocaleString()}</span></p>
       </div>
     </Card>
   )

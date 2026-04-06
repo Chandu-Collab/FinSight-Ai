@@ -343,15 +343,15 @@ export default function SavingsPage() {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
                         <div>
                           <p className="text-gray-500">Target</p>
-                          <p className="font-medium">${goal.target_amount.toLocaleString()}</p>
+                          <p className="font-medium">₹{goal.target_amount.toLocaleString()}</p>
                         </div>
                         <div>
                           <p className="text-gray-500">Saved</p>
-                          <p className="font-medium text-green-600">${goal.current_amount.toLocaleString()}</p>
+                          <p className="font-medium text-green-600">₹{goal.current_amount.toLocaleString()}</p>
                         </div>
                         <div>
                           <p className="text-gray-500">Remaining</p>
-                          <p className="font-medium text-orange-600">${goal.remaining_amount.toLocaleString()}</p>
+                          <p className="font-medium text-orange-600">₹{goal.remaining_amount.toLocaleString()}</p>
                         </div>
                         <div>
                           <p className="text-gray-500">Days Left</p>
@@ -435,11 +435,11 @@ export default function SavingsPage() {
                       <div className="mt-3 grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <p className="text-gray-500">Target</p>
-                          <p className="font-medium">${goal.target_amount.toLocaleString()}</p>
+                          <p className="font-medium">₹{goal.target_amount.toLocaleString()}</p>
                         </div>
                         <div>
                           <p className="text-gray-500">Saved</p>
-                          <p className="font-medium text-green-600">${goal.current_amount.toLocaleString()}</p>
+                          <p className="font-medium text-green-600">₹{goal.current_amount.toLocaleString()}</p>
                         </div>
                       </div>
                     </div>

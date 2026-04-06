@@ -11,7 +11,14 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, Plus, Trash2, TrendingUp, DollarSign } from 'lucide-react'
 import { mlApi, ExpensePredictionRequest, ExpensePredictionResponse, ExpenseItem } from '@/lib/api/production'
-import { formatCurrency } from '@/lib/utils'
+
+const formatCurrencyINR = (amount: number): string => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 2,
+  }).format(amount)
+}
 
 const Badge = ({ children, variant = "default" }: { children: React.ReactNode, variant?: "default" | "secondary" }) => (
   <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -273,7 +280,7 @@ export function ExpensePredictionForm() {
               <div className="text-center p-4 bg-primary/10 rounded-lg">
                 <p className="text-sm text-muted-foreground">Total Predicted Expenses</p>
                 <p className="text-3xl font-bold text-primary">
-                  {formatCurrency(result.total_predicted)}
+                  {formatCurrencyINR(result.total_predicted)}
                 </p>
               </div>
 
@@ -292,7 +299,7 @@ export function ExpensePredictionForm() {
                           )}
                         </div>
                         <span className="font-semibold">
-                          {formatCurrency(pred.predicted_amount)}
+                          {formatCurrencyINR(pred.predicted_amount)}
                         </span>
                       </div>
                     ))}

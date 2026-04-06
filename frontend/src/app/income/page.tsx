@@ -102,11 +102,11 @@ export default function IncomePage() {
       const userData = typeof window !== 'undefined' ? localStorage.getItem('user_data') : null
       const userId = userData ? JSON.parse(userData).id : null
       
-      console.log('🔍 Fetching income data for userId:', userId)
-      console.log('👤 User data from localStorage:', userData)
+      console.log('ðŸ” Fetching income data for userId:', userId)
+      console.log('ðŸ‘¤ User data from localStorage:', userData)
       
       if (!userId) {
-        console.warn('⚠️ No user ID found - user might not be logged in')
+        console.warn('âš ï¸ No user ID found - user might not be logged in')
         toast.error('Please log in to view income data')
         setIncome([])
         setLoading(false)
@@ -114,10 +114,10 @@ export default function IncomePage() {
       }
       
       const response = await incomeApi.getAll(userId)
-      console.log('📊 API Response:', response)
+      console.log('ðŸ“Š API Response:', response)
       
       if (response.data && Array.isArray(response.data)) {
-        console.log('📋 Raw income data:', response.data)
+        console.log('ðŸ“‹ Raw income data:', response.data)
         
         // Validate and sanitize income data
         const validIncome = response.data.filter(item => 
@@ -132,12 +132,12 @@ export default function IncomePage() {
           tax_deducted: item.tax_deducted ? (typeof item.tax_deducted === 'string' ? parseFloat(item.tax_deducted) : item.tax_deducted) : undefined
         }))
         
-        console.log('✅ Valid income data:', validIncome)
+        console.log('âœ… Valid income data:', validIncome)
         setIncome(validIncome)
         
         if (validIncome.length === 0) {
           toast('No income records found. Add your first income!', {
-            icon: '💰',
+            icon: 'ðŸ’°',
             style: {
               background: '#10b981',
               color: 'white',
@@ -145,13 +145,13 @@ export default function IncomePage() {
           })
         }
       } else {
-        console.log('⚠️ No data received from API')
+        console.log('âš ï¸ No data received from API')
         setIncome([])
       }
       
     } catch (error: any) {
       const errorMessage = error?.message || 'Failed to fetch income data'
-      console.error('❌ Error fetching income:', error)
+      console.error('âŒ Error fetching income:', error)
       toast.error(errorMessage)
       setIncome([]) // Set empty array on error to prevent UI crashes
     } finally {
@@ -349,7 +349,7 @@ export default function IncomePage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-green-600">
-                ${totalIncome.toLocaleString()}
+                ₹{totalIncome.toLocaleString()}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 From {filteredIncome.length} sources
@@ -379,7 +379,7 @@ export default function IncomePage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-blue-600">
-                ${averageIncome.toFixed(2)}
+                ₹{averageIncome.toFixed(2)}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Per transaction
@@ -387,11 +387,11 @@ export default function IncomePage() {
               <div className="mt-3 text-sm text-muted-foreground">
                 <div className="flex justify-between">
                   <span>Highest:</span>
-                  <span className="font-medium text-green-600">${highestIncome.toLocaleString()}</span>
+                  <span className="font-medium text-green-600">₹{highestIncome.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Lowest:</span>
-                  <span className="font-medium text-red-600">${lowestIncome.toLocaleString()}</span>
+                  <span className="font-medium text-red-600">₹{lowestIncome.toLocaleString()}</span>
                 </div>
               </div>
             </CardContent>
@@ -414,7 +414,7 @@ export default function IncomePage() {
               {topSourceData && (
                 <div className="mt-3">
                   <div className="text-sm font-medium text-purple-600">
-                    ${topSourceData[1].toLocaleString()}
+                    ₹{topSourceData[1].toLocaleString()}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
                     {topSourcePercentage}% of total
@@ -555,11 +555,11 @@ export default function IncomePage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex flex-col">
                             <span className="text-lg font-bold text-green-600">
-                              {item.currency || '$'}{typeof item.amount === 'number' ? item.amount.toLocaleString() : '0'}
+                              {item.currency || '₹'}{typeof item.amount === 'number' ? item.amount.toLocaleString() : '0'}
                             </span>
                             {item.tax_deducted && (
                               <span className="text-xs text-red-500">
-                                Tax: {item.currency || '$'}{typeof item.tax_deducted === 'number' ? item.tax_deducted.toLocaleString() : '0'}
+                                Tax: {item.currency || '₹'}{typeof item.tax_deducted === 'number' ? item.tax_deducted.toLocaleString() : '0'}
                               </span>
                             )}
                           </div>
@@ -597,7 +597,7 @@ export default function IncomePage() {
                                 }}
                                 className="border-blue-500 hover:bg-blue-50 text-blue-600"
                               >
-                                📎
+                                ðŸ“Ž
                               </Button>
                             )}
                             <Button
@@ -788,11 +788,11 @@ function AddIncomeForm({ onSubmit, onCancel }: { onSubmit: (data: any) => void; 
             onChange={(e) => handleChange('currency', e.target.value)}
             className="w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
           >
-            <option value="USD">USD ($)</option>
-            <option value="EUR">EUR (€)</option>
-            <option value="GBP">GBP (£)</option>
-            <option value="RUPEE">RUPEE (₹)</option>
-            <option value="JPY">JPY (¥)</option>
+            <option value="USD">USD (₹)</option>
+            <option value="EUR">EUR (â‚¬)</option>
+            <option value="GBP">GBP (Â£)</option>
+            <option value="RUPEE">RUPEE (â‚¹)</option>
+            <option value="JPY">JPY (Â¥)</option>
           </select>
         </div>
 
@@ -969,11 +969,11 @@ function EditIncomeForm({ income, onSubmit, onCancel }: { income: IncomeData; on
             onChange={(e) => handleChange('currency', e.target.value)}
             className="w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
           >
-            <option value="USD">USD ($)</option>
-            <option value="EUR">EUR (€)</option>
-            <option value="GBP">GBP (£)</option>
-            <option value="RUPEE">RUPEE (₹)</option>
-            <option value="JPY">JPY (¥)</option>
+            <option value="USD">USD (₹)</option>
+            <option value="EUR">EUR (â‚¬)</option>
+            <option value="GBP">GBP (Â£)</option>
+            <option value="RUPEE">RUPEE (â‚¹)</option>
+            <option value="JPY">JPY (Â¥)</option>
           </select>
         </div>
 

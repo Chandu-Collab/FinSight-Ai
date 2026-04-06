@@ -13,16 +13,16 @@ import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 
 const categoryIcons: Record<string, { icon: string, gradient: string }> = {
-  'Food & Dining': { icon: '🍔', gradient: 'from-orange-500 to-red-500' },
-  'Transportation': { icon: '🚗', gradient: 'from-blue-500 to-cyan-500' },
-  'Shopping': { icon: '🛍', gradient: 'from-purple-500 to-pink-500' },
-  'Entertainment': { icon: '🎬', gradient: 'from-pink-500 to-rose-500' },
-  'Bills & Utilities': { icon: '📄', gradient: 'from-gray-500 to-slate-500' },
-  'Healthcare': { icon: '🏥', gradient: 'from-green-500 to-emerald-500' },
-  'Education': { icon: '📚', gradient: 'from-indigo-500 to-purple-500' },
-  'Travel': { icon: '✈️', gradient: 'from-yellow-500 to-amber-500' },
-  'Subscriptions': { icon: '📱', gradient: 'from-teal-500 to-green-500' },
-  'Other': { icon: '📌', gradient: 'from-gray-500 to-slate-500' }
+  'Food & Dining': { icon: 'ðŸ”', gradient: 'from-orange-500 to-red-500' },
+  'Transportation': { icon: 'ðŸš—', gradient: 'from-blue-500 to-cyan-500' },
+  'Shopping': { icon: 'ðŸ›', gradient: 'from-purple-500 to-pink-500' },
+  'Entertainment': { icon: 'ðŸŽ¬', gradient: 'from-pink-500 to-rose-500' },
+  'Bills & Utilities': { icon: 'ðŸ“„', gradient: 'from-gray-500 to-slate-500' },
+  'Healthcare': { icon: 'ðŸ¥', gradient: 'from-green-500 to-emerald-500' },
+  'Education': { icon: 'ðŸ“š', gradient: 'from-indigo-500 to-purple-500' },
+  'Travel': { icon: 'âœˆï¸', gradient: 'from-yellow-500 to-amber-500' },
+  'Subscriptions': { icon: 'ðŸ“±', gradient: 'from-teal-500 to-green-500' },
+  'Other': { icon: 'ðŸ“Œ', gradient: 'from-gray-500 to-slate-500' }
 }
 
 export default function BudgetDetailPage() {
@@ -38,10 +38,10 @@ export default function BudgetDetailPage() {
 
   const fetchBudget = async () => {
     try {
-      console.log('🔍 Fetching budget details for ID:', id)
+      console.log('ðŸ” Fetching budget details for ID:', id)
       
       const response = await budgetApi.getById(id)
-      console.log('📊 Budget detail response:', response)
+      console.log('ðŸ“Š Budget detail response:', response)
       
       if (response.data) {
         // Transform the data to ensure amounts are numbers
@@ -240,11 +240,11 @@ export default function BudgetDetailPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="bg-blue-50/50 rounded-xl p-4 border border-blue-200/50">
                         <p className="text-sm text-blue-600 font-medium mb-1">Budget Amount</p>
-                        <p className="text-xl font-bold text-blue-900">${budget.amount.toLocaleString()}</p>
+                        <p className="text-xl font-bold text-blue-900">₹{budget.amount.toLocaleString()}</p>
                       </div>
                       <div className="bg-orange-50/50 rounded-xl p-4 border border-orange-200/50">
                         <p className="text-sm text-orange-600 font-medium mb-1">Spent</p>
-                        <p className="text-xl font-bold text-orange-900">${budget.spent.toLocaleString()}</p>
+                        <p className="text-xl font-bold text-orange-900">₹{budget.spent.toLocaleString()}</p>
                       </div>
                       <div className={`${remaining >= 0 ? 'bg-green-50/50 border-green-200/50' : 'bg-red-50/50 border-red-200/50'} rounded-xl p-4 border`}>
                         <p className={`text-sm ${remaining >= 0 ? 'text-green-600' : 'text-red-600'} font-medium mb-1`}>
@@ -327,7 +327,7 @@ export default function BudgetDetailPage() {
                             percentage >= 90 ? 'text-orange-700' :
                             'text-yellow-700'
                           }`}>
-                            {percentage >= 100 && `You have spent $${Math.abs(remaining).toLocaleString()} over your budget.`}
+                            {percentage >= 100 && `You have spent ₹${Math.abs(remaining).toLocaleString()} over your budget.`}
                             {percentage >= 90 && percentage < 100 && `Only ${(100 - percentage).toFixed(1)}% of budget remaining.`}
                             {percentage >= 75 && percentage < 90 && `${(100 - percentage).toFixed(1)}% of budget already used.`}
                           </p>
@@ -349,12 +349,12 @@ export default function BudgetDetailPage() {
                 <CardContent className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Daily Average</span>
-                    <span className="font-semibold text-foreground">${dailyAverage.toFixed(2)}</span>
+                    <span className="font-semibold text-foreground">₹{dailyAverage.toFixed(2)}</span>
                   </div>
                   
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Projected Spend</span>
-                    <span className="font-semibold text-foreground">${projectedSpend.toFixed(2)}</span>
+                    <span className="font-semibold text-foreground">₹{projectedSpend.toFixed(2)}</span>
                   </div>
                   
                   <div className="flex justify-between items-center">
