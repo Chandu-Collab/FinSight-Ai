@@ -55,10 +55,10 @@ export default function IncomeDetailPage() {
 
   const fetchIncome = async () => {
     try {
-      console.log('🔍 Fetching income details for ID:', id)
+      console.log('ðŸ” Fetching income details for ID:', id)
       
       const response = await incomeApi.getById(id)
-      console.log('📊 Income detail response:', response)
+      console.log('ðŸ“Š Income detail response:', response)
       
       if (response.data) {
         // Transform the data to ensure amount and tax_deducted are numbers
@@ -271,7 +271,7 @@ export default function IncomeDetailPage() {
                     {income.tax_deducted && (
                       <div className="bg-card/50 rounded-xl p-4 border border-border/50">
                         <p className="text-sm text-muted-foreground">Tax Deducted</p>
-                        <p className="font-medium text-foreground">${income.tax_deducted.toLocaleString()}</p>
+                        <p className="font-medium text-foreground">₹{income.tax_deducted.toLocaleString()}</p>
                       </div>
                     )}
                   </div>
@@ -290,7 +290,7 @@ export default function IncomeDetailPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Net Amount</span>
                     <span className="font-semibold text-foreground">
-                      {income.currency || '$'}{((income.amount || 0) - (Number(income.tax_deducted) || 0)).toLocaleString()}
+                      {income.currency || '₹'}{((income.amount || 0) - (Number(income.tax_deducted) || 0)).toLocaleString()}
                     </span>
                   </div>
                   

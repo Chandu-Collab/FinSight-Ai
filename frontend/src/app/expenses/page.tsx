@@ -196,7 +196,7 @@ export default function ExpensesPage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-red-600 truncate">
-                ${totalExpenses.toLocaleString()}
+                ₹{totalExpenses.toLocaleString()}
               </div>
               <p className="text-xs text-muted-foreground mt-1 truncate">
                 {filteredExpenses.length > 999 ? `${(filteredExpenses.length / 1000).toFixed(1)}k+` : `${filteredExpenses.length} transactions`}
@@ -217,7 +217,7 @@ export default function ExpensesPage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-orange-600 truncate">
-                ${filteredExpenses.length > 0 && totalExpenses > 0 ? (totalExpenses / filteredExpenses.length).toFixed(2) : '0.00'}
+                ₹{filteredExpenses.length > 0 && totalExpenses > 0 ? (totalExpenses / filteredExpenses.length).toFixed(2) : '0.00'}
               </div>
               <p className="text-xs text-muted-foreground mt-1 truncate">
                 Per transaction
@@ -250,7 +250,7 @@ export default function ExpensesPage() {
               </p>
               {Object.keys(categoryTotals).length > 0 && (
                 <div className="mt-3 text-sm font-medium text-purple-600 truncate">
-                  ${Object.entries(categoryTotals).sort(([, a], [, b]) => b - a)[0][1].toLocaleString()}
+                  ₹{Object.entries(categoryTotals).sort(([, a], [, b]) => b - a)[0][1].toLocaleString()}
                 </div>
               )}
             </CardContent>
@@ -384,7 +384,7 @@ export default function ExpensesPage() {
                         <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                           <div className="flex flex-col sm:block">
                             <span className="text-lg sm:text-xl font-bold text-red-600">
-                              -${expense.amount.toLocaleString()}
+                              -₹{expense.amount.toLocaleString()}
                             </span>
                             <span className="text-xs text-muted-foreground sm:hidden">
                               {expense.category.split(' ')[0]}

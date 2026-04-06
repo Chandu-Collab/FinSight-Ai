@@ -48,16 +48,16 @@ export default function EditBudgetPage() {
   ]
 
   const categoryIcons: Record<string, string> = {
-    'Food & Dining': '🍔',
-    'Transportation': '🚗',
-    'Shopping': '🛍',
-    'Entertainment': '🎬',
-    'Bills & Utilities': '📄',
-    'Healthcare': '🏥',
-    'Education': '📚',
-    'Travel': '✈️',
-    'Subscriptions': '📱',
-    'Other': '📌'
+    'Food & Dining': 'ðŸ”',
+    'Transportation': 'ðŸš—',
+    'Shopping': 'ðŸ›',
+    'Entertainment': 'ðŸŽ¬',
+    'Bills & Utilities': 'ðŸ“„',
+    'Healthcare': 'ðŸ¥',
+    'Education': 'ðŸ“š',
+    'Travel': 'âœˆï¸',
+    'Subscriptions': 'ðŸ“±',
+    'Other': 'ðŸ“Œ'
   }
 
   const budgetRecommendations: Record<string, { min: number; max: number; description: string }> = {
@@ -319,7 +319,7 @@ export default function EditBudgetPage() {
                   </label>
                   <div className="relative rounded-xl shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <span className="text-muted-foreground sm:text-sm">$</span>
+                      <span className="text-muted-foreground sm:text-sm">₹</span>
                     </div>
                     <input
                       type="number"
@@ -429,7 +429,7 @@ export default function EditBudgetPage() {
                   </label>
                   <div className="relative rounded-xl shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <span className="text-muted-foreground sm:text-sm">$</span>
+                      <span className="text-muted-foreground sm:text-sm">₹</span>
                     </div>
                     <input
                       type="number"

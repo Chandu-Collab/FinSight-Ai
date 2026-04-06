@@ -57,13 +57,13 @@ export default function ReportDetailPage() {
     try {
       setLoading(true)
       setError(null)
-      console.log('🔍 Fetching report details for ID:', reportId)
+      console.log('ðŸ” Fetching report details for ID:', reportId)
       
       const response = await reportsService.getReportById(reportId)
-      console.log('🔍 Report details response:', response)
+      console.log('ðŸ” Report details response:', response)
       setReport(response.data)
     } catch (error) {
-      console.error('❌ Error fetching report details:', error)
+      console.error('âŒ Error fetching report details:', error)
       setError(error instanceof Error ? error.message : 'Failed to fetch report details')
     } finally {
       setLoading(false)
@@ -145,34 +145,34 @@ export default function ReportDetailPage() {
       ``,
       `FINANCIAL SUMMARY`,
       `---------------`,
-      `Total Income: $${report.data.total_income?.toLocaleString() || 0}`,
-      `Total Expenses: $${report.data.total_expenses?.toLocaleString() || 0}`,
-      `Net Income: $${report.data.net_income?.toLocaleString() || 0}`,
+      `Total Income: ₹${report.data.total_income?.toLocaleString() || 0}`,
+      `Total Expenses: ₹${report.data.total_expenses?.toLocaleString() || 0}`,
+      `Net Income: ₹${report.data.net_income?.toLocaleString() || 0}`,
       `Budgets: ${report.data.budget_count || 0}`,
       `Savings Goals: ${report.data.savings_count || 0}`,
       ``,
       `INCOME TRANSACTIONS (${report.data.income?.length || 0})`,
       `------------------`,
       report.data.income?.slice(0, 10).map((income: any, index: number) => 
-        `${index + 1}. ${income.source}: $${income.amount?.toLocaleString()} - ${income.description || 'No description'}`
+        `${index + 1}. ${income.source}: ₹${income.amount?.toLocaleString()} - ${income.description || 'No description'}`
       ).join('\n') || 'No income transactions found',
       ``,
       `EXPENSE TRANSACTIONS (${report.data.expenses?.length || 0})`,
       `-------------------`,
       report.data.expenses?.slice(0, 10).map((expense: any, index: number) => 
-        `${index + 1}. ${expense.category}: $${expense.amount?.toLocaleString()} - ${expense.description || 'No description'}`
+        `${index + 1}. ${expense.category}: ₹${expense.amount?.toLocaleString()} - ${expense.description || 'No description'}`
       ).join('\n') || 'No expense transactions found',
       ``,
       `BUDGETS (${report.data.budgets?.length || 0})`,
       `--------`,
       report.data.budgets?.slice(0, 5).map((budget: any, index: number) => 
-        `${budget.name}: $${budget.spent?.toLocaleString()} / $${budget.amount?.toLocaleString()} (${Math.round((budget.spent / budget.amount) * 100)}%)`
+        `${budget.name}: ₹${budget.spent?.toLocaleString()} / ₹${budget.amount?.toLocaleString()} (${Math.round((budget.spent / budget.amount) * 100)}%)`
       ).join('\n') || 'No budgets found',
       ``,
       `SAVINGS GOALS (${report.data.savings_goals?.length || 0})`,
       `---------------`,
       report.data.savings_goals?.slice(0, 5).map((goal: any, index: number) => 
-        `${goal.name}: $${goal.current_amount?.toLocaleString()} / $${goal.target_amount?.toLocaleString()} (${Math.round((goal.current_amount / goal.target_amount) * 100)}%)` +
+        `${goal.name}: ₹${goal.current_amount?.toLocaleString()} / ₹${goal.target_amount?.toLocaleString()} (${Math.round((goal.current_amount / goal.target_amount) * 100)}%)` +
         ` Target: ${format(new Date(goal.target_date), 'MMMM dd, yyyy')}`
       ).join('\n') || 'No savings goals found',
       ``,
@@ -476,7 +476,7 @@ export default function ReportDetailPage() {
                         <p className="text-sm text-muted-foreground">{income.description}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-foreground">${income.amount?.toLocaleString()}</p>
+                        <p className="font-semibold text-foreground">₹{income.amount?.toLocaleString()}</p>
                         <p className="text-xs text-muted-foreground">{format(new Date(income.date), 'MMM dd')}</p>
                       </div>
                     </div>
@@ -514,7 +514,7 @@ export default function ReportDetailPage() {
                         <p className="text-sm text-muted-foreground">{expense.description}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-foreground">${expense.amount?.toLocaleString()}</p>
+                        <p className="font-semibold text-foreground">₹{expense.amount?.toLocaleString()}</p>
                         <p className="text-xs text-muted-foreground">{format(new Date(expense.date), 'MMM dd')}</p>
                       </div>
                     </div>

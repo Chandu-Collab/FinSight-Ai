@@ -271,7 +271,7 @@ export default function DashboardPage() {
                 <span className="text-sm text-green-600 font-medium">Income</span>
               </div>
               <div className="text-3xl font-bold text-foreground mb-1">
-                ${stats.totalIncome.toLocaleString()}
+                ₹{stats.totalIncome.toLocaleString()}
               </div>
               <p className="text-sm text-muted-foreground">This month</p>
             </div>
@@ -283,7 +283,7 @@ export default function DashboardPage() {
                 <span className="text-sm text-red-600 font-medium">Expenses</span>
               </div>
               <div className="text-3xl font-bold text-foreground mb-1">
-                ${stats.totalExpenses.toLocaleString()}
+                ₹{stats.totalExpenses.toLocaleString()}
               </div>
               <p className="text-sm text-muted-foreground">This month</p>
             </div>
@@ -295,7 +295,7 @@ export default function DashboardPage() {
                 <span className="text-sm text-blue-600 font-medium">Net</span>
               </div>
               <div className={`text-3xl font-bold mb-1 ${stats.totalIncome - stats.totalExpenses >= 0 ? 'text-foreground' : 'text-destructive'}`}>
-                ${Math.abs(stats.totalIncome - stats.totalExpenses).toLocaleString()}
+                ₹{Math.abs(stats.totalIncome - stats.totalExpenses).toLocaleString()}
               </div>
               <p className="text-sm text-muted-foreground">Cash flow</p>
               <div className={`mt-2 text-xs ${stats.totalIncome - stats.totalExpenses >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -310,7 +310,7 @@ export default function DashboardPage() {
                 <span className="text-sm text-purple-600 font-medium">Savings</span>
               </div>
               <div className="text-3xl font-bold text-foreground mb-1">
-                ${Number(stats.currentSavings || 0).toLocaleString()}
+                ₹{Number(stats.currentSavings || 0).toLocaleString()}
               </div>
               <p className="text-sm text-muted-foreground">Total Savings</p>
               {(() => {

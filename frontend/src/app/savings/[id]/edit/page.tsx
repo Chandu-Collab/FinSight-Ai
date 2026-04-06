@@ -45,17 +45,17 @@ export default function EditSavingsPage() {
   ]
 
   const categoryIcons: Record<string, string> = {
-    'Emergency Fund': '🚨',
-    'Vacation': '✈️',
-    'Home Purchase': '🏠',
-    'Car Purchase': '🚗',
-    'Education': '📚',
-    'Investment': '📈',
-    'Retirement': '🏖️',
-    'Wedding': '💍',
-    'Healthcare': '🏥',
-    'Technology': '💻',
-    'Other': '📌'
+    'Emergency Fund': 'ðŸš¨',
+    'Vacation': 'âœˆï¸',
+    'Home Purchase': 'ðŸ ',
+    'Car Purchase': 'ðŸš—',
+    'Education': 'ðŸ“š',
+    'Investment': 'ðŸ“ˆ',
+    'Retirement': 'ðŸ–ï¸',
+    'Wedding': 'ðŸ’',
+    'Healthcare': 'ðŸ¥',
+    'Technology': 'ðŸ’»',
+    'Other': 'ðŸ“Œ'
   }
 
   useEffect(() => {
@@ -308,7 +308,7 @@ export default function EditSavingsPage() {
                   </label>
                   <div className="mt-1 relative rounded-md shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <span className="text-gray-500 sm:text-sm">$</span>
+                      <span className="text-gray-500 sm:text-sm">₹</span>
                     </div>
                     <input
                       type="number"
@@ -332,7 +332,7 @@ export default function EditSavingsPage() {
                   </label>
                   <div className="mt-1 relative rounded-md shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <span className="text-gray-500 sm:text-sm">$</span>
+                      <span className="text-gray-500 sm:text-sm">₹</span>
                     </div>
                     <input
                       type="number"
@@ -411,11 +411,11 @@ export default function EditSavingsPage() {
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <p className="text-gray-500">Target</p>
-                        <p className="font-medium">${goal.target_amount.toLocaleString()}</p>
+                        <p className="font-medium">₹{goal.target_amount.toLocaleString()}</p>
                       </div>
                       <div>
                         <p className="text-gray-500">Saved</p>
-                        <p className="font-medium text-green-600">${goal.current_amount.toLocaleString()}</p>
+                        <p className="font-medium text-green-600">₹{goal.current_amount.toLocaleString()}</p>
                       </div>
                       <div>
                         <p className="text-gray-500">Remaining</p>

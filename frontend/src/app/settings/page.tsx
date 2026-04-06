@@ -232,8 +232,8 @@ export default function SettingsPage() {
                   className="px-3 py-2 border border-input rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card text-foreground text-sm"
                 >
                   <option value="en">English</option>
-                  <option value="es">Español</option>
-                  <option value="fr">Français</option>
+                  <option value="es">EspaÃ±ol</option>
+                  <option value="fr">FranÃ§ais</option>
                   <option value="de">Deutsch</option>
                 </select>
               </div>
@@ -266,10 +266,10 @@ export default function SettingsPage() {
                   defaultValue="USD"
                   className="px-3 py-2 border border-input rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card text-foreground text-sm"
                 >
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                  <option value="GBP">GBP (£)</option>
-                  <option value="JPY">JPY (¥)</option>
+                  <option value="USD">USD (₹)</option>
+                  <option value="EUR">EUR (â‚¬)</option>
+                  <option value="GBP">GBP (Â£)</option>
+                  <option value="JPY">JPY (Â¥)</option>
                 </select>
               </div>
             </CardContent>
