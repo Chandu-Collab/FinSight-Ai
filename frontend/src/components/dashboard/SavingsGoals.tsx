@@ -1,9 +1,13 @@
 'use client'
 
+import { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Target, Plus, Calendar } from 'lucide-react'
 import { formatCurrency, calculatePercentage, getDaysUntilDeadline } from '@/lib/utils'
+import { SavingsGoalModal } from '@/components/savings-goals/SavingsGoalModal'
+import { savingsGoalsAPI } from '@/lib/api/savings-goals'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface Goal {
   id: string
@@ -16,13 +20,37 @@ interface Goal {
 
 interface SavingsGoalsProps {
   goals: Goal[]
+  onGoalCreated?: () => void
 }
 
-export function SavingsGoals({ goals }: SavingsGoalsProps) {
+export function SavingsGoals({ goals, onGoalCreated }: SavingsGoalsProps) {
+  const { user } = useAuth()
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+
   const getProgressColor = (percentage: number) => {
     if (percentage >= 80) return 'bg-green-500 dark:bg-green-400'
     if (percentage >= 50) return 'bg-yellow-500 dark:bg-yellow-400'
     return 'bg-blue-500 dark:bg-blue-400'
+  }
+
+  const handleCreateGoal = async (goalData: any) => {
+    try {
+      setIsLoading(true)
+      const userId = user?.id || 'demo-user-001'
+      await savingsGoalsAPI.createSavingsGoal({
+        ...goalData,
+        user_id: userId
+      })
+      setIsModalOpen(false)
+      if (onGoalCreated) {
+        onGoalCreated()
+      }
+    } catch (error) {
+      console.error('Error creating savings goal:', error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const getDeadlineText = (target_date?: string) => {
@@ -49,7 +77,7 @@ export function SavingsGoals({ goals }: SavingsGoalsProps) {
           <Target className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2" />
           <h3 className="text-lg font-semibold text-card-foreground">Savings Goals</h3>
         </div>
-        <Button size="sm" className="p-2">
+        <Button size="sm" className="p-2" onClick={() => setIsModalOpen(true)}>
           <Plus className="h-4 w-4" />
         </Button>
       </div>
@@ -104,10 +132,17 @@ export function SavingsGoals({ goals }: SavingsGoalsProps) {
           <div className="text-center py-8">
             <Target className="h-12 w-12 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 mb-4">No savings goals yet</p>
-            <Button size="sm">Create Your First Goal</Button>
+            <Button size="sm" onClick={() => setIsModalOpen(true)}>Create Your First Goal</Button>
           </div>
         )}
       </div>
+      
+      <SavingsGoalModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleCreateGoal}
+        isLoading={isLoading}
+      />
     </Card>
   )
 }
