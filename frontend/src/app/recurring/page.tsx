@@ -423,18 +423,14 @@ export default function RecurringTransactionsPage() {
               variant={filterType === 'income' ? 'default' : 'outline'}
               onClick={() => setFilterType('income')}
               size="sm"
-              className="flex items-center space-x-1"
             >
-              <span>ðŸ“ˆ</span>
               Income
             </Button>
             <Button
               variant={filterType === 'expense' ? 'default' : 'outline'}
               onClick={() => setFilterType('expense')}
               size="sm"
-              className="flex items-center space-x-1"
             >
-              <span>ðŸ“‰</span>
               Expenses
             </Button>
           </div>

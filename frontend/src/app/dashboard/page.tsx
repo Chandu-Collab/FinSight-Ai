@@ -381,7 +381,7 @@ export default function DashboardPage() {
             {/* Savings Goals */}
             <div className="bg-card p-6 rounded-lg border border-border">
               <h3 className="text-lg font-semibold text-foreground mb-4">Savings Goals</h3>
-              <SavingsGoals goals={stats.savingsGoals} />
+              <SavingsGoals goals={stats.savingsGoals} onGoalCreated={() => fetchDashboardData(true)} />
             </div>
 
             {/* AI Predictions */}
