@@ -46,19 +46,6 @@ const expenseCategories = [
   'Other'
 ]
 
-const categoryIcons: Record<string, { icon: string, gradient: string }> = {
-  'Food & Dining': { icon: 'ðŸ”', gradient: 'from-orange-500 to-red-500' },
-  'Transportation': { icon: 'ðŸš—', gradient: 'from-blue-500 to-cyan-500' },
-  'Shopping': { icon: 'ðŸ›', gradient: 'from-purple-500 to-pink-500' },
-  'Entertainment': { icon: 'ðŸŽ¬', gradient: 'from-pink-500 to-rose-500' },
-  'Bills & Utilities': { icon: 'ðŸ“„', gradient: 'from-gray-500 to-slate-500' },
-  'Healthcare': { icon: 'ðŸ¥', gradient: 'from-green-500 to-emerald-500' },
-  'Education': { icon: 'ðŸ“š', gradient: 'from-indigo-500 to-purple-500' },
-  'Travel': { icon: 'âœˆï¸', gradient: 'from-yellow-500 to-amber-500' },
-  'Subscriptions': { icon: 'ðŸ“±', gradient: 'from-teal-500 to-green-500' },
-  'Other': { icon: 'ðŸ“Œ', gradient: 'from-gray-500 to-slate-500' }
-}
-
 export default function BudgetsPage() {
   const [budgets, setBudgets] = useState<BudgetWithStatus[]>([])
   const [loading, setLoading] = useState(true)
@@ -430,9 +417,6 @@ export default function BudgetsPage() {
                   <div key={budget.id} className="bg-card/60 backdrop-blur-sm border-2 border-border/50 rounded-2xl p-6 hover:shadow-lg transition-all duration-300">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-4">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-r ${categoryIcons[budget.category]?.gradient || 'from-gray-500 to-slate-500'}`}>
-                          <span className="text-xl">{categoryIcons[budget.category]?.icon}</span>
-                        </div>
                         <div>
                           <h3 className="text-lg font-bold text-foreground">{budget.name}</h3>
                           <p className="text-sm text-muted-foreground">{budget.category}</p>
