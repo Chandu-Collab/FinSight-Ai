@@ -253,7 +253,10 @@ export default function SavingsGoalsPage() {
 
   const completedCount = filteredGoals.filter(goal => {
     const status = goal.status?.toLowerCase().trim()
-    return status === 'completed' || status === 'complete' || status === 'finished'
+    const currentAmount = typeof goal.current_amount === 'string' ? parseFloat(goal.current_amount) : (goal.current_amount || 0)
+    const targetAmount = typeof goal.target_amount === 'string' ? parseFloat(goal.target_amount) : (goal.target_amount || 0)
+    const isProgressComplete = targetAmount > 0 && currentAmount >= targetAmount
+    return status === 'completed' || status === 'complete' || status === 'finished' || isProgressComplete
   }).length
 
   const averageProgress = filteredGoals.length > 0 ? 
