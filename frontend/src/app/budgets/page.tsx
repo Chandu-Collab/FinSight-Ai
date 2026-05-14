@@ -637,19 +637,6 @@ function AddBudgetForm({ onSubmit, onCancel, userId }: { onSubmit: (data: any) =
     'Other'
   ]
 
-  const categoryIcons: Record<string, string> = {
-    'Food & Dining': 'ðŸ”',
-    'Transportation': 'ðŸš—',
-    'Shopping': 'ðŸ›',
-    'Entertainment': 'ðŸŽ¬',
-    'Bills & Utilities': 'ðŸ“„',
-    'Healthcare': 'ðŸ¥',
-    'Education': 'ðŸ“š',
-    'Travel': 'âœˆï¸',
-    'Subscriptions': 'ðŸ“±',
-    'Other': 'ðŸ“Œ'
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -700,7 +687,7 @@ function AddBudgetForm({ onSubmit, onCancel, userId }: { onSubmit: (data: any) =
           <option value="">Select a category...</option>
           {expenseCategories.map((category) => (
             <option key={category} value={category}>
-              {categoryIcons[category]} {category}
+              {category}
             </option>
           ))}
         </select>
@@ -857,7 +844,6 @@ function EditBudgetForm({ budget, onSubmit, onCancel }: { budget: BudgetWithStat
     rollover: budget.rollover || false,
     spent: budget.spent?.toString() || '0',
   })
-
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const expenseCategories = [
@@ -872,19 +858,6 @@ function EditBudgetForm({ budget, onSubmit, onCancel }: { budget: BudgetWithStat
     'Subscriptions',
     'Other'
   ]
-
-  const categoryIcons: Record<string, string> = {
-    'Food & Dining': 'ðŸ”',
-    'Transportation': 'ðŸš—',
-    'Shopping': 'ðŸ›',
-    'Entertainment': 'ðŸŽ¬',
-    'Bills & Utilities': 'ðŸ“„',
-    'Healthcare': 'ðŸ¥',
-    'Education': 'ðŸ“š',
-    'Travel': 'âœˆï¸',
-    'Subscriptions': 'ðŸ“±',
-    'Other': 'ðŸ“Œ'
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -936,7 +909,7 @@ function EditBudgetForm({ budget, onSubmit, onCancel }: { budget: BudgetWithStat
           <option value="">Select a category...</option>
           {expenseCategories.map((category) => (
             <option key={category} value={category}>
-              {categoryIcons[category]} {category}
+              {category}
             </option>
           ))}
         </select>
