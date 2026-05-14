@@ -10,7 +10,7 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { Plus, TrendingUp, TrendingDown, AlertTriangle, Target, Calendar, DollarSign, Zap, Shield, AlertCircle, BarChart3, Filter, Eye, X } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { format, startOfMonth, endOfMonth, subMonths, addMonths } from 'date-fns'
+import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 
 interface Budget {
@@ -45,19 +45,6 @@ const expenseCategories = [
   'Subscriptions',
   'Other'
 ]
-
-const categoryIcons: Record<string, { icon: string, gradient: string }> = {
-  'Food & Dining': { icon: 'ðŸ”', gradient: 'from-orange-500 to-red-500' },
-  'Transportation': { icon: 'ðŸš—', gradient: 'from-blue-500 to-cyan-500' },
-  'Shopping': { icon: 'ðŸ›', gradient: 'from-purple-500 to-pink-500' },
-  'Entertainment': { icon: 'ðŸŽ¬', gradient: 'from-pink-500 to-rose-500' },
-  'Bills & Utilities': { icon: 'ðŸ“„', gradient: 'from-gray-500 to-slate-500' },
-  'Healthcare': { icon: 'ðŸ¥', gradient: 'from-green-500 to-emerald-500' },
-  'Education': { icon: 'ðŸ“š', gradient: 'from-indigo-500 to-purple-500' },
-  'Travel': { icon: 'âœˆï¸', gradient: 'from-yellow-500 to-amber-500' },
-  'Subscriptions': { icon: 'ðŸ“±', gradient: 'from-teal-500 to-green-500' },
-  'Other': { icon: 'ðŸ“Œ', gradient: 'from-gray-500 to-slate-500' }
-}
 
 export default function BudgetsPage() {
   const [budgets, setBudgets] = useState<BudgetWithStatus[]>([])
@@ -159,15 +146,6 @@ export default function BudgetsPage() {
   const totalRemaining = totalBudgeted - totalSpent
   const overallPercentage = totalBudgeted > 0 ? (totalSpent / totalBudgeted) * 100 : 0
 
-  const monthOptions = []
-  for (let i = -6; i <= 6; i++) {
-    const date = addMonths(new Date(), i)
-    monthOptions.push({
-      value: format(date, 'yyyy-MM'),
-      label: format(date, 'MMMM yyyy')
-    })
-  }
-
   const handleView = (id: string) => {
     router.push(`/budgets/${id}`)
   }
@@ -220,6 +198,7 @@ export default function BudgetsPage() {
         description: data.description,
         is_active: data.is_active,
         rollover: data.rollover,
+        spent: Number(data.spent || 0),
       })
       toast.success('Budget updated successfully!')
       setShowEditModal(false)
@@ -272,17 +251,18 @@ export default function BudgetsPage() {
               </div>
             </div>
             <div className="flex space-x-3">
-              <select
+              <div className="flex items-center gap-2 px-4 py-2 border border-input rounded-xl shadow-sm bg-card/50 backdrop-blur-sm">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <input
+                  type="month"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="px-4 py-2 border border-input rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
-              >
-                {monthOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                  min="2020-01"
+                  max="2030-12"
+                  className="bg-transparent outline-none text-sm text-foreground appearance-none"
+                  aria-label="Select budget month"
+                />
+              </div>
               <Button 
                 onClick={() => setShowAddModal(true)}
                 className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 shadow-lg transform transition-all duration-200 hover:scale-105"
@@ -429,9 +409,6 @@ export default function BudgetsPage() {
                   <div key={budget.id} className="bg-card/60 backdrop-blur-sm border-2 border-border/50 rounded-2xl p-6 hover:shadow-lg transition-all duration-300">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-4">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-r ${categoryIcons[budget.category]?.gradient || 'from-gray-500 to-slate-500'}`}>
-                          <span className="text-xl">{categoryIcons[budget.category]?.icon}</span>
-                        </div>
                         <div>
                           <h3 className="text-lg font-bold text-foreground">{budget.name}</h3>
                           <p className="text-sm text-muted-foreground">{budget.category}</p>
@@ -636,19 +613,6 @@ function AddBudgetForm({ onSubmit, onCancel, userId }: { onSubmit: (data: any) =
     'Other'
   ]
 
-  const categoryIcons: Record<string, string> = {
-    'Food & Dining': 'ðŸ”',
-    'Transportation': 'ðŸš—',
-    'Shopping': 'ðŸ›',
-    'Entertainment': 'ðŸŽ¬',
-    'Bills & Utilities': 'ðŸ“„',
-    'Healthcare': 'ðŸ¥',
-    'Education': 'ðŸ“š',
-    'Travel': 'âœˆï¸',
-    'Subscriptions': 'ðŸ“±',
-    'Other': 'ðŸ“Œ'
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -699,7 +663,7 @@ function AddBudgetForm({ onSubmit, onCancel, userId }: { onSubmit: (data: any) =
           <option value="">Select a category...</option>
           {expenseCategories.map((category) => (
             <option key={category} value={category}>
-              {categoryIcons[category]} {category}
+              {category}
             </option>
           ))}
         </select>
@@ -773,6 +737,30 @@ function AddBudgetForm({ onSubmit, onCancel, userId }: { onSubmit: (data: any) =
           className="block w-full px-4 py-3 border border-input rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
           placeholder="Optional description for this budget..."
         />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-2">
+          Initial Spent Amount
+        </label>
+        <div className="relative rounded-xl shadow-sm">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <span className="text-muted-foreground sm:text-sm">₹</span>
+          </div>
+          <input
+            type="number"
+            name="spent"
+            step="0.01"
+            min="0"
+            value={formData.spent}
+            onChange={handleChange}
+            className="block w-full pl-8 pr-12 py-3 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+            placeholder="0.00"
+          />
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          If some amount is already spent for this budget, enter it here
+        </p>
       </div>
 
       <div className="space-y-3">
@@ -830,8 +818,8 @@ function EditBudgetForm({ budget, onSubmit, onCancel }: { budget: BudgetWithStat
     description: budget.description || '',
     is_active: budget.is_active !== false,
     rollover: budget.rollover || false,
+    spent: budget.spent?.toString() || '0',
   })
-
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const expenseCategories = [
@@ -846,19 +834,6 @@ function EditBudgetForm({ budget, onSubmit, onCancel }: { budget: BudgetWithStat
     'Subscriptions',
     'Other'
   ]
-
-  const categoryIcons: Record<string, string> = {
-    'Food & Dining': 'ðŸ”',
-    'Transportation': 'ðŸš—',
-    'Shopping': 'ðŸ›',
-    'Entertainment': 'ðŸŽ¬',
-    'Bills & Utilities': 'ðŸ“„',
-    'Healthcare': 'ðŸ¥',
-    'Education': 'ðŸ“š',
-    'Travel': 'âœˆï¸',
-    'Subscriptions': 'ðŸ“±',
-    'Other': 'ðŸ“Œ'
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -910,7 +885,7 @@ function EditBudgetForm({ budget, onSubmit, onCancel }: { budget: BudgetWithStat
           <option value="">Select a category...</option>
           {expenseCategories.map((category) => (
             <option key={category} value={category}>
-              {categoryIcons[category]} {category}
+              {category}
             </option>
           ))}
         </select>
@@ -984,6 +959,30 @@ function EditBudgetForm({ budget, onSubmit, onCancel }: { budget: BudgetWithStat
           className="block w-full px-4 py-3 border border-input rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
           placeholder="Optional description for this budget..."
         />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-2">
+          Spent Amount
+        </label>
+        <div className="relative rounded-xl shadow-sm">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <span className="text-muted-foreground sm:text-sm">₹</span>
+          </div>
+          <input
+            type="number"
+            name="spent"
+            step="0.01"
+            min="0"
+            value={formData.spent}
+            onChange={handleChange}
+            className="block w-full pl-8 pr-12 py-3 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+            placeholder="0.00"
+          />
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Update the amount already spent for this budget
+        </p>
       </div>
 
       <div className="space-y-3">
