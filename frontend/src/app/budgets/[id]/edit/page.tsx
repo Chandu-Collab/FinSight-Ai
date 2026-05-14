@@ -47,19 +47,6 @@ export default function EditBudgetPage() {
     'Other'
   ]
 
-  const categoryIcons: Record<string, string> = {
-    'Food & Dining': 'ðŸ”',
-    'Transportation': 'ðŸš—',
-    'Shopping': 'ðŸ›',
-    'Entertainment': 'ðŸŽ¬',
-    'Bills & Utilities': 'ðŸ“„',
-    'Healthcare': 'ðŸ¥',
-    'Education': 'ðŸ“š',
-    'Travel': 'âœˆï¸',
-    'Subscriptions': 'ðŸ“±',
-    'Other': 'ðŸ“Œ'
-  }
-
   const budgetRecommendations: Record<string, { min: number; max: number; description: string }> = {
     'Food & Dining': { min: 300, max: 800, description: 'Monthly groceries and dining out' },
     'Transportation': { min: 100, max: 500, description: 'Gas, public transport, car maintenance' },
@@ -286,7 +273,7 @@ export default function EditBudgetPage() {
                     <option value="">Select a category...</option>
                     {expenseCategories.map((category) => (
                       <option key={category} value={category}>
-                        {categoryIcons[category]} {category}
+                        {category}
                       </option>
                     ))}
                   </select>
@@ -304,7 +291,6 @@ export default function EditBudgetPage() {
                               : 'bg-muted hover:bg-muted/80 text-muted-foreground'
                           }`}
                         >
-                          <span className="text-lg">{categoryIcons[category]}</span>
                           <span>{category}</span>
                         </button>
                       ))}
