@@ -185,7 +185,7 @@ cp .env.example .env
 
 ```env
 # Database Configuration
-DATABASE_URL=postgresql://localhost:5432/finsight_ai
+DATABASE_URL=postgresql://your_user:your_password@localhost:5432/finsight_ai
 SECRET_KEY=your-secret-key-here
 
 # API Configuration

@@ -23,7 +23,10 @@ from dotenv import load_dotenv
 import json
 import requests
 import pickle
-load_dotenv()
+from werkzeug.exceptions import HTTPException
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 # Enhanced predictor class for expense prediction
 class ExpensePredictor:
@@ -318,7 +321,32 @@ class ExpensePredictor:
 predictor = ExpensePredictor()
 
 app = Flask(__name__)
-CORS(app, origins=['http://localhost:3000', 'http://127.0.0.1:3000'], supports_credentials=True)
+CORS_ORIGINS = [origin.strip() for origin in os.environ.get('CORS_ORIGINS', '').split(',') if origin.strip()]
+CORS(app, origins=CORS_ORIGINS, supports_credentials=True)
+
+
+@app.errorhandler(psycopg2.OperationalError)
+def handle_database_error(error):
+    message = str(error)
+    if 'no password supplied' in message.lower():
+        message = (
+            'Database connection failed. Set DATABASE_URL to include a username and password, '
+            'for example: postgresql://user:password@localhost:5432/finsight_ai'
+        )
+    return jsonify({'error': message, 'status': 'error'}), 503
+
+
+@app.errorhandler(HTTPException)
+def handle_http_exception(error):
+    response = jsonify({'error': error.description, 'status': 'error'})
+    response.status_code = error.code or 500
+    return response
+
+
+@app.errorhandler(Exception)
+def handle_unexpected_exception(error):
+    app.logger.exception('Unhandled backend error')
+    return jsonify({'error': 'Internal server error', 'status': 'error'}), 500
 
 def jwt_required(f):
     @wraps(f)
@@ -564,11 +592,19 @@ GMAIL_USER = os.environ.get('GMAIL_USER')
 GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD')
 EMAIL_FROM = os.environ.get('EMAIL_FROM')
 DB_URL = os.environ.get('DATABASE_URL')
-JWT_SECRET = os.environ.get('JWT_SECRET', 'your_super_secret_jwt_key_here')
+JWT_SECRET = os.environ.get('JWT_SECRET')
 
 # --- DB CONNECTION ---
 def get_db_conn():
-    return psycopg2.connect(DB_URL)
+    if not DB_URL:
+        raise psycopg2.OperationalError('DATABASE_URL is not set')
+
+    db_url = DB_URL
+    if 'sslmode=' not in db_url:
+        separator = '&' if '?' in db_url else '?'
+        db_url = f'{db_url}{separator}sslmode=require'
+
+    return psycopg2.connect(db_url)
 
 
 
@@ -2988,7 +3024,11 @@ def root():
     })
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8000))
+    port_value = os.environ.get('PORT')
+    if not port_value:
+        raise RuntimeError('PORT is not set')
+
+    port = int(port_value)
     print(f"🚀 FinSight AI Backend API starting on port {port}")
     print(f"📊 Health check: http://localhost:{port}/api/health")
     print(f"📈 Data status: http://localhost:{port}/api-data-status")
