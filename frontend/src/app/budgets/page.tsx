@@ -220,6 +220,7 @@ export default function BudgetsPage() {
         description: data.description,
         is_active: data.is_active,
         rollover: data.rollover,
+        spent: Number(data.spent || 0),
       })
       toast.success('Budget updated successfully!')
       setShowEditModal(false)
@@ -775,6 +776,30 @@ function AddBudgetForm({ onSubmit, onCancel, userId }: { onSubmit: (data: any) =
         />
       </div>
 
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-2">
+          Initial Spent Amount
+        </label>
+        <div className="relative rounded-xl shadow-sm">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <span className="text-muted-foreground sm:text-sm">₹</span>
+          </div>
+          <input
+            type="number"
+            name="spent"
+            step="0.01"
+            min="0"
+            value={formData.spent}
+            onChange={handleChange}
+            className="block w-full pl-8 pr-12 py-3 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+            placeholder="0.00"
+          />
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          If some amount is already spent for this budget, enter it here
+        </p>
+      </div>
+
       <div className="space-y-3">
         <label className="flex items-center space-x-3 cursor-pointer">
           <input
@@ -830,6 +855,7 @@ function EditBudgetForm({ budget, onSubmit, onCancel }: { budget: BudgetWithStat
     description: budget.description || '',
     is_active: budget.is_active !== false,
     rollover: budget.rollover || false,
+    spent: budget.spent?.toString() || '0',
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -984,6 +1010,30 @@ function EditBudgetForm({ budget, onSubmit, onCancel }: { budget: BudgetWithStat
           className="block w-full px-4 py-3 border border-input rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
           placeholder="Optional description for this budget..."
         />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-2">
+          Spent Amount
+        </label>
+        <div className="relative rounded-xl shadow-sm">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <span className="text-muted-foreground sm:text-sm">₹</span>
+          </div>
+          <input
+            type="number"
+            name="spent"
+            step="0.01"
+            min="0"
+            value={formData.spent}
+            onChange={handleChange}
+            className="block w-full pl-8 pr-12 py-3 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
+            placeholder="0.00"
+          />
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Update the amount already spent for this budget
+        </p>
       </div>
 
       <div className="space-y-3">
