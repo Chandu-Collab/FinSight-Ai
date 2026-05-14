@@ -53,19 +53,6 @@ export default function CreateBudgetPage() {
     'Other'
   ];
 
-  const categoryIcons: Record<string, string> = {
-    'Food & Dining': 'ðŸ”',
-    'Transportation': 'ðŸš—',
-    'Shopping': 'ðŸ›',
-    'Entertainment': 'ðŸŽ¬',
-    'Bills & Utilities': 'ðŸ“„',
-    'Healthcare': 'ðŸ¥',
-    'Education': 'ðŸ“š',
-    'Travel': 'âœˆï¸',
-    'Subscriptions': 'ðŸ“±',
-    'Other': 'ðŸ“Œ'
-  };
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type, checked } = e.target as any;
     setForm((prev) => ({
@@ -172,7 +159,7 @@ export default function CreateBudgetPage() {
                       <option value="">Select a category...</option>
                       {expenseCategories.map((category) => (
                         <option key={category} value={category}>
-                          {categoryIcons[category]} {category}
+                          {category}
                         </option>
                       ))}
                     </select>
@@ -190,7 +177,6 @@ export default function CreateBudgetPage() {
                                 : 'bg-muted hover:bg-muted/80 text-muted-foreground'
                             }`}
                           >
-                            <span className="text-lg">{categoryIcons[category]}</span>
                             <span>{category}</span>
                           </button>
                         ))}
