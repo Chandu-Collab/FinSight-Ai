@@ -23,28 +23,6 @@ const frequencyLabels: Record<string, string> = {
   'custom': 'Custom'
 }
 
-const categoryIcons: Record<string, string> = {
-  'Food & Dining': '🍔',
-  'Transportation': '🚗',
-  'Shopping': '🛍',
-  'Entertainment': '🎬',
-  'Bills & Utilities': '📄',
-  'Healthcare': '🏥',
-  'Education': '📚',
-  'Travel': '✈️',
-  'Subscriptions': '📱',
-  'Other': '📌',
-  'Salary': '💼',
-  'Freelance': '💻',
-  'Business': '🏢',
-  'Investments': '📈',
-  'Rentals': '🏠',
-  'Dividends': '💰',
-  'Side Hustle': '🔧',
-  'Gifts': '🎁',
-  'Refunds': '↩️'
-}
-
 export default function RecurringTransactionDetailPage() {
   const [transaction, setTransaction] = useState<RecurringTransaction | null>(null)
   const [loading, setLoading] = useState(true)
@@ -161,9 +139,7 @@ export default function RecurringTransactionDetailPage() {
     ? Math.min(((transaction.run_count || 0) / transaction.max_occurrences) * 100, 100) 
     : 0
 
-  const typeIcon = transaction.type === 'income' ? '📈' : '📉'
   const typeColor = transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-  const typeGradient = transaction.type === 'income' ? 'from-green-500 to-emerald-500' : 'from-red-500 to-pink-500'
 
   return (
     <AppLayout>
@@ -219,7 +195,6 @@ export default function RecurringTransactionDetailPage() {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-xl font-semibold text-foreground">Transaction Information</CardTitle>
                     <div className="flex items-center space-x-2">
-                      <span className="text-2xl">{typeIcon}</span>
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
                         transaction.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                       }`}>
@@ -239,9 +214,6 @@ export default function RecurringTransactionDetailPage() {
                         <p className={`text-3xl font-bold ${transaction.type === 'income' ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
                           {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toLocaleString()}
                         </p>
-                      </div>
-                      <div className={`w-12 h-12 bg-gradient-to-r ${typeGradient} rounded-xl flex items-center justify-center`}>
-                        <DollarSign className="h-6 w-6 text-white" />
                       </div>
                     </div>
                   </div>
@@ -344,10 +316,7 @@ export default function RecurringTransactionDetailPage() {
                     {transaction.category && (
                       <div className="bg-card/50 rounded-xl p-4 border border-border/50">
                         <p className="text-sm text-muted-foreground">Category</p>
-                        <div className="flex items-center space-x-2">
-                          <span>{categoryIcons[transaction.category] || '📌'}</span>
-                          <p className="font-medium text-foreground">{transaction.category}</p>
-                        </div>
+                        <p className="font-medium text-foreground">{transaction.category}</p>
                       </div>
                     )}
                     

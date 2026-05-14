@@ -17,7 +17,6 @@ interface RecurringTransactionWithDetails extends RecurringTransaction {
   formattedStartDate: string
   formattedEndDate?: string
   frequencyLabel: string
-  typeIcon: string
   typeColor: string
   progressPercentage: number
   daysUntilNext: number
@@ -133,7 +132,6 @@ export default function RecurringTransactionsPage() {
       formattedStartDate: format(new Date(transaction.start_date || transaction.created_at), 'MMM d, yyyy'),
       formattedEndDate: transaction.end_date ? format(new Date(transaction.end_date), 'MMM d, yyyy') : undefined,
       frequencyLabel: frequencyLabels[transaction.frequency],
-      typeIcon: transaction.type === 'income' ? 'ðŸ“ˆ' : 'ðŸ“‰',
       typeColor: transaction.type === 'income' ? 'text-green-600' : 'text-red-600',
       progressPercentage,
       daysUntilNext,
@@ -425,18 +423,14 @@ export default function RecurringTransactionsPage() {
               variant={filterType === 'income' ? 'default' : 'outline'}
               onClick={() => setFilterType('income')}
               size="sm"
-              className="flex items-center space-x-1"
             >
-              <span>ðŸ“ˆ</span>
               Income
             </Button>
             <Button
               variant={filterType === 'expense' ? 'default' : 'outline'}
               onClick={() => setFilterType('expense')}
               size="sm"
-              className="flex items-center space-x-1"
             >
-              <span>ðŸ“‰</span>
               Expenses
             </Button>
           </div>
@@ -509,10 +503,12 @@ export default function RecurringTransactionsPage() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <span className="text-2xl">{transaction.typeIcon}</span>
                         <div className="flex-1">
                           <h3 className="font-medium text-gray-900">{transaction.name}</h3>
                           <div className="flex items-center space-x-4 text-sm text-gray-500">
+                            <span className={`font-medium ${transaction.typeColor}`}>
+                              {transaction.type === 'income' ? 'Income' : 'Expense'}
+                            </span>
                             {transaction.source && (
                               <span className="flex items-center space-x-1">
                                 <span>From:</span>

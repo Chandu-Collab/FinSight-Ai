@@ -12,19 +12,6 @@ import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 
-const categoryIcons: Record<string, { icon: string, gradient: string }> = {
-  'Food & Dining': { icon: 'ðŸ”', gradient: 'from-orange-500 to-red-500' },
-  'Transportation': { icon: 'ðŸš—', gradient: 'from-blue-500 to-cyan-500' },
-  'Shopping': { icon: 'ðŸ›', gradient: 'from-purple-500 to-pink-500' },
-  'Entertainment': { icon: 'ðŸŽ¬', gradient: 'from-pink-500 to-rose-500' },
-  'Bills & Utilities': { icon: 'ðŸ“„', gradient: 'from-gray-500 to-slate-500' },
-  'Healthcare': { icon: 'ðŸ¥', gradient: 'from-green-500 to-emerald-500' },
-  'Education': { icon: 'ðŸ“š', gradient: 'from-indigo-500 to-purple-500' },
-  'Travel': { icon: 'âœˆï¸', gradient: 'from-yellow-500 to-amber-500' },
-  'Subscriptions': { icon: 'ðŸ“±', gradient: 'from-teal-500 to-green-500' },
-  'Other': { icon: 'ðŸ“Œ', gradient: 'from-gray-500 to-slate-500' }
-}
-
 export default function BudgetDetailPage() {
   const [budget, setBudget] = useState<Budget | null>(null)
   const [loading, setLoading] = useState(true)
@@ -214,9 +201,6 @@ export default function BudgetDetailPage() {
                         <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">
                           {budget.category}
                         </p>
-                      </div>
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-r ${categoryIcons[budget.category]?.gradient || 'from-gray-500 to-slate-500'}`}>
-                        <span className="text-xl">{categoryIcons[budget.category]?.icon}</span>
                       </div>
                     </div>
                   </div>
