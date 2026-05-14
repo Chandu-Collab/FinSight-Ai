@@ -10,7 +10,7 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { Plus, TrendingUp, TrendingDown, AlertTriangle, Target, Calendar, DollarSign, Zap, Shield, AlertCircle, BarChart3, Filter, Eye, X } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { format, startOfMonth, endOfMonth, subMonths, addMonths } from 'date-fns'
+import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 
 interface Budget {
@@ -146,15 +146,6 @@ export default function BudgetsPage() {
   const totalRemaining = totalBudgeted - totalSpent
   const overallPercentage = totalBudgeted > 0 ? (totalSpent / totalBudgeted) * 100 : 0
 
-  const monthOptions = []
-  for (let i = -6; i <= 6; i++) {
-    const date = addMonths(new Date(), i)
-    monthOptions.push({
-      value: format(date, 'yyyy-MM'),
-      label: format(date, 'MMMM yyyy')
-    })
-  }
-
   const handleView = (id: string) => {
     router.push(`/budgets/${id}`)
   }
@@ -260,17 +251,18 @@ export default function BudgetsPage() {
               </div>
             </div>
             <div className="flex space-x-3">
-              <select
+              <div className="flex items-center gap-2 px-4 py-2 border border-input rounded-xl shadow-sm bg-card/50 backdrop-blur-sm">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <input
+                  type="month"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="px-4 py-2 border border-input rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card/50 backdrop-blur-sm"
-              >
-                {monthOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                  min="2020-01"
+                  max="2030-12"
+                  className="bg-transparent outline-none text-sm text-foreground appearance-none"
+                  aria-label="Select budget month"
+                />
+              </div>
               <Button 
                 onClick={() => setShowAddModal(true)}
                 className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 shadow-lg transform transition-all duration-200 hover:scale-105"
