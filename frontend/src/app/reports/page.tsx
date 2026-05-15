@@ -27,6 +27,19 @@ import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
+// Helper function to safely format dates
+const safeFormatDate = (date: string | Date | undefined | null, formatStr: string = 'MMM dd, yyyy'): string => {
+  if (!date) return 'N/A'
+  try {
+    const dateObj = typeof date === 'string' ? new Date(date) : date
+    if (isNaN(dateObj.getTime())) return 'Invalid Date'
+    return format(dateObj, formatStr)
+  } catch (error) {
+    console.error('Error formatting date:', error)
+    return 'Invalid Date'
+  }
+}
+
 export default function ReportsPage() {
   const router = useRouter()
   const [reports, setReports] = useState<Report[]>([])
@@ -259,7 +272,9 @@ export default function ReportsPage() {
                             {report.report_type.charAt(0).toUpperCase() + report.report_type.slice(1)}
                           </h3>
                           <p className="text-xs text-muted-foreground">
-                            {format(new Date(report.date_range.start), 'MMM dd, yyyy')} - {format(new Date(report.date_range.end), 'MMM dd, yyyy')}
+                            {report.date_range?.start && report.date_range?.end
+                              ? `${safeFormatDate(report.date_range.start)} - ${safeFormatDate(report.date_range.end)}`
+                              : 'Custom date range'}
                           </p>
                         </div>
                       </div>
@@ -286,7 +301,7 @@ export default function ReportsPage() {
                       <div>
                         <h4 className="font-medium text-foreground mb-2">{report.name}</h4>
                         <p className="text-xs text-muted-foreground">
-                          Generated on {format(new Date(report.generated_at), 'MMM dd, yyyy')}
+                          Generated on {safeFormatDate(report.generated_at)}
                         </p>
                       </div>
                       
