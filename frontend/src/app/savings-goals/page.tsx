@@ -12,7 +12,7 @@ import {
   Plus, 
   TrendingUp, 
   Calendar, 
-  DollarSign, 
+  IndianRupee, 
   Edit, 
   Trash2, 
   Eye,
@@ -344,7 +344,7 @@ export default function SavingsGoalsPage() {
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Total Saved</CardTitle>
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
-                  <DollarSign className="h-4 w-4 text-white" />
+                  <IndianRupee className="h-4 w-4 text-white" />
                 </div>
               </CardHeader>
               <CardContent>

@@ -13,7 +13,7 @@ import {
   Calendar, 
   TrendingUp, 
   TrendingDown, 
-  DollarSign, 
+  IndianRupee, 
   BarChart3, 
   PieChart, 
   ArrowLeft,
@@ -418,7 +418,7 @@ export default function ReportDetailPage() {
                   <TrendingUp className="w-6 h-6 text-green-600" />
                 </div>
                 <h3 className="text-2xl font-bold text-foreground">
-                  ${report.data.total_income?.toLocaleString() || 0}
+                  ₹{report.data.total_income?.toLocaleString() || 0}
                 </h3>
                 <p className="text-sm text-muted-foreground">Total Income</p>
               </div>
@@ -428,17 +428,17 @@ export default function ReportDetailPage() {
                   <TrendingDown className="w-6 h-6 text-red-600" />
                 </div>
                 <h3 className="text-2xl font-bold text-foreground">
-                  ${report.data.total_expenses?.toLocaleString() || 0}
+                  ₹{report.data.total_expenses?.toLocaleString() || 0}
                 </h3>
                 <p className="text-sm text-muted-foreground">Total Expenses</p>
               </div>
               
               <div className="text-center">
                 <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mx-auto mb-2">
-                  <DollarSign className="w-6 h-6 text-blue-600" />
+                  <IndianRupee className="w-6 h-6 text-blue-600" />
                 </div>
                 <h3 className="text-2xl font-bold text-foreground">
-                  ${report.data.net_income?.toLocaleString() || 0}
+                  ₹{report.data.net_income?.toLocaleString() || 0}
                 </h3>
                 <p className="text-sm text-muted-foreground">Net Income</p>
               </div>

@@ -420,7 +420,7 @@ export default function EditSavingsPage() {
                       <div>
                         <p className="text-gray-500">Remaining</p>
                         <p className={`font-medium ${remaining_amount >= 0 ? 'text-orange-600' : 'text-red-600'}`}>
-                          ${Math.abs(remaining_amount).toLocaleString()}
+                          ₹{Math.abs(remaining_amount).toLocaleString()}
                         </p>
                       </div>
                       <div>
@@ -443,7 +443,7 @@ export default function EditSavingsPage() {
                       </div>
                       <div className="text-right">
                         <p className="text-lg font-bold text-blue-900">
-                          ${monthly_required.toFixed(0)}
+                          ₹{monthly_required.toFixed(0)}
                         </p>
                       </div>
                     </div>
