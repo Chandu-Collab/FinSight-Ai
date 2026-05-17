@@ -6,7 +6,7 @@ import { expenseApi } from '@/lib/api/production'
 import toast from 'react-hot-toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { DollarSign, Calendar, CreditCard, Tag, FileText, Repeat, X } from 'lucide-react'
+import { IndianRupee, Calendar, CreditCard, Tag, FileText, Repeat, X } from 'lucide-react'
 import Link from 'next/link'
 
 const expenseCategories = [
@@ -110,7 +110,7 @@ export default function AddExpensePage() {
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">Amount *</label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <IndianRupee className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <input type="number" step="0.01" required value={formData.amount} 
                         onChange={(e) => handleChange('amount', e.target.value)}
                         className="pl-10 w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"

@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, Plus, Trash2, TrendingUp, DollarSign } from 'lucide-react'
+import { Loader2, Plus, Trash2, TrendingUp, IndianRupee } from 'lucide-react'
 import { mlApi, ExpensePredictionRequest, ExpensePredictionResponse, ExpenseItem } from '@/lib/api/production'
 
 const formatCurrencyINR = (amount: number): string => {
@@ -268,7 +268,7 @@ export function ExpensePredictionForm() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <DollarSign className="h-5 w-5" />
+              <IndianRupee className="h-5 w-5" />
               <span>Prediction Results</span>
             </CardTitle>
             <CardDescription>
@@ -319,3 +319,8 @@ export function ExpensePredictionForm() {
     </div>
   )
 }
+
+
+
+
+

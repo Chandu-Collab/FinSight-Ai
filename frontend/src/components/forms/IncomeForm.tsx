@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { DollarSign, Calendar } from 'lucide-react'
+import { IndianRupee, Calendar } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const incomeSchema = z.object({
@@ -115,7 +115,7 @@ export function IncomeForm({ initialData, onSubmit, onCancel, loading, title }: 
                   <FormLabel>Amount</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <IndianRupee className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
                         placeholder="0.00"
                         className="pl-10"
@@ -216,3 +216,8 @@ export function IncomeForm({ initialData, onSubmit, onCancel, loading, title }: 
     </Card>
   )
 }
+
+
+
+
+

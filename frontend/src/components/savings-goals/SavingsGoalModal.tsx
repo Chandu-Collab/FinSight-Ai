@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { X, DollarSign, Calendar, Target, FileText, Upload } from 'lucide-react'
+import { X, IndianRupee, Calendar, Target, FileText, Upload } from 'lucide-react'
 import { format } from 'date-fns'
 import { SavingsGoal } from '@/lib/api/savings-goals'
 import { useAuth } from '@/contexts/AuthContext'
@@ -207,7 +207,7 @@ export function SavingsGoalModal({ isOpen, onClose, onSubmit, editingGoal, isLoa
             {/* Financial Details */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-foreground flex items-center">
-                <DollarSign className="h-5 w-5 mr-2 text-emerald-600" />
+                <IndianRupee className="h-5 w-5 mr-2 text-emerald-600" />
                 Financial Details
               </h3>
               
@@ -403,3 +403,8 @@ export function SavingsGoalModal({ isOpen, onClose, onSubmit, editingGoal, isLoa
     </div>
   )
 }
+
+
+
+
+

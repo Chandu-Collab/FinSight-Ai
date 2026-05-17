@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Search, Filter, X, Calendar, DollarSign, Tag, ChevronDown, ChevronUp } from 'lucide-react'
+import { Search, Filter, X, Calendar, IndianRupee, Tag, ChevronDown, ChevronUp } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, subMonths, addMonths, isWithinInterval } from 'date-fns'
 
 interface Transaction {
@@ -519,3 +519,8 @@ export default function TransactionSearchFilter({
     </Card>
   )
 }
+
+
+
+
+
