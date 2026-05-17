@@ -263,13 +263,10 @@ export default function SettingsPage() {
                   <p className="text-xs text-muted-foreground">Display currency format</p>
                 </div>
                 <select
-                  defaultValue="USD"
+                  defaultValue="INR"
                   className="px-3 py-2 border border-input rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-card text-foreground text-sm"
                 >
-                  <option value="USD">USD (₹)</option>
-                  <option value="EUR">EUR (â‚¬)</option>
-                  <option value="GBP">GBP (Â£)</option>
-                  <option value="JPY">JPY (Â¥)</option>
+                  <option value="INR">INR (₹)</option>
                 </select>
               </div>
             </CardContent>

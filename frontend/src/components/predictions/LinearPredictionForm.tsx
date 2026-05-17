@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2, Plus, Trash2, TrendingUp, DollarSign, Brain } from 'lucide-react'
+import { Loader2, Plus, Trash2, TrendingUp, IndianRupee, Brain } from 'lucide-react'
 import { mlApi, LinearPredictionRequest, LinearPredictionResponse } from '@/lib/api/production'
 
 const formatCurrencyINR = (amount: number): string => {
@@ -411,3 +411,8 @@ export function LinearPredictionForm() {
     </div>
   )
 }
+
+
+
+
+
