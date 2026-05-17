@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { DollarSign, Calendar, X } from 'lucide-react'
+import { IndianRupee, Calendar, X } from 'lucide-react'
 import Link from 'next/link'
 
 const incomeSources = [
@@ -19,7 +19,7 @@ export default function AddIncomePage() {
   const [showModal, setShowModal] = useState(false)
   const [formData, setFormData] = useState({
     amount: '', source: '', description: '', date: new Date().toISOString().split('T')[0],
-    category: '', currency: 'USD', status: 'confirmed', frequency: '', tax_deducted: ''
+    category: '', currency: 'INR', status: 'confirmed', frequency: '', tax_deducted: ''
   })
   const router = useRouter()
 
@@ -42,7 +42,7 @@ export default function AddIncomePage() {
       await incomeApi.create({
         user_id: userId, amount: parseFloat(formData.amount), source: formData.source,
         description: formData.description || undefined, date: formData.date,
-        category: formData.category || undefined, currency: formData.currency || 'USD',
+        category: formData.category || undefined, currency: formData.currency || 'INR',
         status: formData.status || 'confirmed', frequency: formData.frequency || undefined,
         tax_deducted: formData.tax_deducted ? parseFloat(formData.tax_deducted) : undefined
       })
@@ -83,7 +83,7 @@ export default function AddIncomePage() {
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">Amount *</label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <IndianRupee className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <input type="number" step="0.01" required value={formData.amount} 
                         onChange={(e) => handleChange('amount', e.target.value)}
                         className="pl-10 w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
@@ -117,11 +117,7 @@ export default function AddIncomePage() {
                     <label className="block text-sm font-medium text-foreground mb-2">Currency</label>
                     <select value={formData.currency} onChange={(e) => handleChange('currency', e.target.value)}
                       className="w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background">
-                      <option value="USD">USD (₹)</option>
-                      <option value="EUR">EUR (â‚¬)</option>
-                      <option value="GBP">GBP (Â£)</option>
-                      <option value="RUPEE">RUPEE (â‚¹)</option>
-                      <option value="JPY">JPY (Â¥)</option>
+                      <option value="INR">INR (₹)</option>
                     </select>
                   </div>
                   <div>
@@ -147,7 +143,7 @@ export default function AddIncomePage() {
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">Tax Deducted</label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <IndianRupee className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <input type="number" step="0.01" value={formData.tax_deducted} 
                         onChange={(e) => handleChange('tax_deducted', e.target.value)}
                         className="pl-10 w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
@@ -175,3 +171,8 @@ export default function AddIncomePage() {
     </div>
   )
 }
+
+
+
+
+

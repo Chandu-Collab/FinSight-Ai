@@ -6,7 +6,7 @@ import { expenseApi } from '@/lib/api/production'
 import toast from 'react-hot-toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { DollarSign, Calendar, CreditCard, Tag, FileText, Repeat, X } from 'lucide-react'
+import { IndianRupee, Calendar, CreditCard, Tag, FileText, Repeat, X } from 'lucide-react'
 
 interface Expense {
   id: string

@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import toast from 'react-hot-toast'
-import { Calendar, DollarSign, Repeat, Info } from 'lucide-react'
+import { Calendar, IndianRupee, Repeat, Info } from 'lucide-react'
 import { format, addDays, addWeeks, addMonths, addYears } from 'date-fns'
 
 const recurringTransactionSchema = z.object({
@@ -292,7 +292,7 @@ export default function RecurringTransactionForm({ transaction, onSuccess, onCan
                       <FormLabel>Amount *</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <IndianRupee className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                           <Input
                             type="number"
                             step="0.01"
@@ -724,3 +724,8 @@ export default function RecurringTransactionForm({ transaction, onSuccess, onCan
     </div>
   )
 }
+
+
+
+
+

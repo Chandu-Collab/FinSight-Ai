@@ -230,7 +230,7 @@ export default function IncomePage() {
         description: data.description || undefined,
         date: data.date,
         category: data.category || undefined,
-        currency: data.currency || 'USD',
+        currency: data.currency || 'INR',
         status: data.status || 'confirmed',
         frequency: data.frequency || undefined,
         tax_deducted: data.tax_deducted ? parseFloat(data.tax_deducted) : undefined
@@ -699,7 +699,7 @@ function AddIncomeForm({ onSubmit, onCancel }: { onSubmit: (data: any) => void; 
     description: '',
     date: new Date().toISOString().split('T')[0],
     category: '',
-    currency: 'USD',
+    currency: 'INR',
     status: 'confirmed',
     frequency: '',
     tax_deducted: ''
@@ -728,7 +728,7 @@ function AddIncomeForm({ onSubmit, onCancel }: { onSubmit: (data: any) => void; 
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">Amount *</label>
           <div className="relative">
-            <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <IndianRupee className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <input
               type="number"
               step="0.01"
@@ -788,11 +788,7 @@ function AddIncomeForm({ onSubmit, onCancel }: { onSubmit: (data: any) => void; 
             onChange={(e) => handleChange('currency', e.target.value)}
             className="w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
           >
-            <option value="USD">USD (₹)</option>
-            <option value="EUR">EUR (â‚¬)</option>
-            <option value="GBP">GBP (Â£)</option>
-            <option value="RUPEE">RUPEE (â‚¹)</option>
-            <option value="JPY">JPY (Â¥)</option>
+            <option value="INR">INR (₹)</option>
           </select>
         </div>
 
@@ -827,7 +823,7 @@ function AddIncomeForm({ onSubmit, onCancel }: { onSubmit: (data: any) => void; 
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">Tax Deducted</label>
           <div className="relative">
-            <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <IndianRupee className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <input
               type="number"
               step="0.01"
@@ -880,7 +876,7 @@ function EditIncomeForm({ income, onSubmit, onCancel }: { income: IncomeData; on
     description: income.description || '',
     date: income.date ? income.date.split('T')[0] : '',
     category: income.category || '',
-    currency: income.currency || 'USD',
+    currency: income.currency || 'INR',
     status: income.status || 'confirmed',
     frequency: income.frequency || '',
     tax_deducted: income.tax_deducted ? income.tax_deducted.toString() : ''
@@ -909,7 +905,7 @@ function EditIncomeForm({ income, onSubmit, onCancel }: { income: IncomeData; on
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">Amount *</label>
           <div className="relative">
-            <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <IndianRupee className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <input
               type="number"
               step="0.01"
@@ -969,11 +965,7 @@ function EditIncomeForm({ income, onSubmit, onCancel }: { income: IncomeData; on
             onChange={(e) => handleChange('currency', e.target.value)}
             className="w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
           >
-            <option value="USD">USD (₹)</option>
-            <option value="EUR">EUR (â‚¬)</option>
-            <option value="GBP">GBP (Â£)</option>
-            <option value="RUPEE">RUPEE (â‚¹)</option>
-            <option value="JPY">JPY (Â¥)</option>
+            <option value="INR">INR (₹)</option>
           </select>
         </div>
 
@@ -1008,7 +1000,7 @@ function EditIncomeForm({ income, onSubmit, onCancel }: { income: IncomeData; on
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">Tax Deducted</label>
           <div className="relative">
-            <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <IndianRupee className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <input
               type="number"
               step="0.01"
@@ -1052,3 +1044,8 @@ function EditIncomeForm({ income, onSubmit, onCancel }: { income: IncomeData; on
     </form>
   )
 }
+
+
+
+
+
