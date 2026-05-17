@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { incomeApi, expenseApi, savingsApi, budgetApi, transactionApi } from '@/lib/api/production'
 import { 
-  DollarSign, 
+  IndianRupee, 
   TrendingUp, 
   TrendingDown, 
   PiggyBank,
@@ -291,7 +291,7 @@ export default function DashboardPage() {
           <Card className="bg-card border-border hover:shadow-md transition-shadow">
             <div className="p-6">
               <div className="flex items-center justify-between mb-3">
-                <DollarSign className="h-6 w-6 text-blue-600" />
+                <IndianRupee className="h-6 w-6 text-blue-600" />
                 <span className="text-sm text-blue-600 font-medium">Net</span>
               </div>
               <div className={`text-3xl font-bold mb-1 ${stats.totalIncome - stats.totalExpenses >= 0 ? 'text-foreground' : 'text-destructive'}`}>

@@ -6,7 +6,7 @@ import { incomeApi, Income } from '@/lib/api/production'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { ArrowLeft, Edit, Trash2, Calendar, DollarSign, FileText, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Edit, Trash2, Calendar, IndianRupee, FileText, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
@@ -190,11 +190,11 @@ export default function IncomeDetailPage() {
                       <div>
                         <p className="text-sm font-medium text-green-600 dark:text-green-400">Amount</p>
                         <p className="text-3xl font-bold text-green-700 dark:text-green-300">
-                          ${income.amount.toLocaleString()}
+                          ₹{income.amount.toLocaleString()}
                         </p>
                       </div>
                       <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-                        <DollarSign className="h-6 w-6 text-white" />
+                        <IndianRupee className="h-6 w-6 text-white" />
                       </div>
                     </div>
                   </div>

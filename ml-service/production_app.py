@@ -175,19 +175,19 @@ class FinancePredictor:
             # Top spending category
             if category_totals:
                 top_category = max(category_totals, key=category_totals.get)
-                insights.append(f"Your highest spending category is {top_category} at ${category_totals[top_category]:.2f}")
+                insights.append(f"Your highest spending category is {top_category} at ₹{category_totals[top_category]:.2f}")
             
             # Spending trend
             if len(monthly_totals) > 1:
                 recent_month = monthly_totals.iloc[-1]
                 previous_month = monthly_totals.iloc[-2]
                 if recent_month > previous_month:
-                    insights.append(f"Your spending increased by ${recent_month - previous_month:.2f} this month")
+                    insights.append(f"Your spending increased by ₹{recent_month - previous_month:.2f} this month")
                 else:
-                    insights.append(f"Good news! Your spending decreased by ${previous_month - recent_month:.2f} this month")
+                    insights.append(f"Good news! Your spending decreased by ₹{previous_month - recent_month:.2f} this month")
             
             # Average spending insight
-            insights.append(f"Your average expense is ${avg_expense:.2f}")
+            insights.append(f"Your average expense is ₹{avg_expense:.2f}")
             
             # Category recommendations
             for category, amount in category_totals.items():

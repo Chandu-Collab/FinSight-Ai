@@ -13,7 +13,7 @@ import {
   Calendar, 
   TrendingUp, 
   TrendingDown, 
-  DollarSign, 
+  IndianRupee, 
   BarChart3, 
   PieChart, 
   Filter,
@@ -311,7 +311,7 @@ export default function ReportsPage() {
                           <div>
                             <p className="text-xs text-muted-foreground">Income</p>
                             <p className="font-semibold text-foreground">
-                              ${report.data.total_income?.toLocaleString() || 0}
+                              ₹{report.data.total_income?.toLocaleString() || 0}
                             </p>
                           </div>
                         </div>
@@ -320,16 +320,16 @@ export default function ReportsPage() {
                           <div>
                             <p className="text-xs text-muted-foreground">Expenses</p>
                             <p className="font-semibold text-foreground">
-                              ${report.data.total_expenses?.toLocaleString() || 0}
+                              ₹{report.data.total_expenses?.toLocaleString() || 0}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <DollarSign className="h-4 w-4 text-blue-500" />
+                          <IndianRupee className="h-4 w-4 text-blue-500" />
                           <div>
                             <p className="text-xs text-muted-foreground">Net Income</p>
                             <p className="font-semibold text-foreground">
-                              ${report.data.net_income?.toLocaleString() || 0}
+                              ₹{report.data.net_income?.toLocaleString() || 0}
                             </p>
                           </div>
                         </div>

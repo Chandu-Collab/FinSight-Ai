@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { Plus, Target, TrendingUp, Calendar, DollarSign, Award, AlertCircle, Trophy, Zap, Star, Flag, CheckCircle2, Clock, ArrowRight } from 'lucide-react'
+import { Plus, Target, TrendingUp, Calendar, IndianRupee, Award, AlertCircle, Trophy, Zap, Star, Flag, CheckCircle2, Clock, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { format, differenceInDays, isAfter, isBefore, startOfDay } from 'date-fns'
@@ -132,7 +132,7 @@ export default function SavingsPage() {
       case 'completed': return <Award className="h-4 w-4" />
       case 'overdue': return <AlertCircle className="h-4 w-4" />
       case 'active': return <Target className="h-4 w-4" />
-      default: return <DollarSign className="h-4 w-4" />
+      default: return <IndianRupee className="h-4 w-4" />
     }
   }
 
@@ -205,7 +205,7 @@ export default function SavingsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-blue-600">
-                ${totalTarget.toLocaleString()}
+                ₹{totalTarget.toLocaleString()}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Across {goals.length} goals
@@ -221,12 +221,12 @@ export default function SavingsPage() {
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Total Saved</CardTitle>
               <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                <DollarSign className="h-4 w-4 text-white" />
+                <IndianRupee className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-green-600">
-                ${totalSaved.toLocaleString()}
+                ₹{totalSaved.toLocaleString()}  
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {overallProgress.toFixed(1)}% progress
@@ -249,7 +249,7 @@ export default function SavingsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-orange-600">
-                ${totalRemaining.toLocaleString()}
+                ₹{totalRemaining.toLocaleString()}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 To reach all goals
@@ -370,7 +370,7 @@ export default function SavingsPage() {
                           </div>
                           <div className="text-right">
                             <p className="text-lg font-bold text-blue-900">
-                              ${goal.monthly_required.toFixed(0)}
+                              ₹{goal.monthly_required.toFixed(0)}
                             </p>
                           </div>
                         </div>

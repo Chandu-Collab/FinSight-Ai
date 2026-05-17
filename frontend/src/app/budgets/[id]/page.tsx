@@ -235,7 +235,7 @@ export default function BudgetDetailPage() {
                           {remaining >= 0 ? 'Remaining' : 'Over Budget'}
                         </p>
                         <p className={`text-xl font-bold ${remaining >= 0 ? 'text-green-900' : 'text-red-900'}`}>
-                          ${Math.abs(remaining).toLocaleString()}
+                          ₹{Math.abs(remaining).toLocaleString()}
                         </p>
                       </div>
                     </div>
@@ -397,7 +397,7 @@ export default function BudgetDetailPage() {
                     <div>
                       <p className="text-sm font-medium text-foreground">Spending Rate</p>
                       <p className="text-xs text-muted-foreground">
-                        ${dailyAverage.toFixed(2)} per day
+                        ₹{dailyAverage.toFixed(2)} per day
                       </p>
                     </div>
                   </div>
@@ -408,7 +408,7 @@ export default function BudgetDetailPage() {
                       <div>
                         <p className="text-sm font-medium text-foreground">Projected Overspend</p>
                         <p className="text-xs text-muted-foreground">
-                          ${(projectedSpend - budget.amount).toFixed(2)} over budget
+                          ₹{(projectedSpend - budget.amount).toFixed(2)} over budget
                         </p>
                       </div>
                     </div>
