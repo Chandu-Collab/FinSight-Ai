@@ -7,7 +7,7 @@ import { getCurrentUserId, isAuthenticated, setupDemoUser } from '@/lib/utils/us
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { Plus, TrendingUp, TrendingDown, AlertTriangle, Target, Calendar, DollarSign, Zap, Shield, AlertCircle, BarChart3, Filter, Eye, X } from 'lucide-react'
+import { Plus, TrendingUp, TrendingDown, AlertTriangle, Target, Calendar, IndianRupee, Zap, Shield, AlertCircle, BarChart3, Filter, Eye, X } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
@@ -127,7 +127,7 @@ export default function BudgetsPage() {
       case 'warning': return <AlertTriangle className="h-4 w-4" />
       case 'danger': return <AlertCircle className="h-4 w-4" />
       case 'exceeded': return <Target className="h-4 w-4" />
-      default: return <DollarSign className="h-4 w-4" />
+      default: return <IndianRupee className="h-4 w-4" />
     }
   }
 
@@ -283,7 +283,7 @@ export default function BudgetsPage() {
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Total Budgeted</CardTitle>
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
-                <DollarSign className="h-4 w-4 text-white" />
+                <IndianRupee className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>

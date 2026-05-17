@@ -56,7 +56,7 @@ Successfully merged advanced ML features from `ml-service` into the main `backen
 
 ### After (Enhanced Model)
 - **R² Score**: 0.87 (87% variance explained)
-- **MAE**: $16.81 (mean absolute error)
+- **MAE**: ₹16.81 (mean absolute error)
 - **Category Breakdown**: Individual predictions per category
 - **Real Data**: Uses actual database expense records
 - **Advanced Features**: 11+ engineered features
@@ -127,11 +127,11 @@ POST /api/insights
 {
   "status": "success",
   "insights": [
-    "Your highest spending category is Food at $530.00",
-    "Good news! Your spending decreased by $35.00 this month",
-    "Your average expense is $119.17",
+    "Your highest spending category is Food at ₹530.00",
+    "Good news! Your spending decreased by ₹35.00 this month",
+    "Your average expense is ₹119.17",
     "Consider reviewing Food spending - it's 74.1% of your total expenses",
-    "You spend approximately $12.54 per day on average"
+    "You spend approximately ₹12.54 per day on average"
   ],
   "total_expenses": 715.0,
   "category_breakdown": {"Food": 530.0, "Transport": 110.0, "Entertainment": 75.0}

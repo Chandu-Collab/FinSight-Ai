@@ -282,7 +282,7 @@ export default function BudgetAlerts() {
                       <div>
                         <span className="opacity-75">Remaining:</span>
                         <span className={`ml-1 font-medium ${alert.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          ${Math.abs(alert.remaining).toLocaleString()}
+                          ₹{Math.abs(alert.remaining).toLocaleString()}
                         </span>
                       </div>
                     </div>
